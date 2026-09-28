@@ -4,7 +4,9 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import com.agriflow.agriflow.exception.FarmAreaExceededException;
 import com.agriflow.agriflow.model.Field;
+import com.agriflow.agriflow.model.Farm;
 import com.agriflow.agriflow.repository.FieldRepository;
 
 @Service
@@ -17,6 +19,22 @@ public class FieldService {
     }
 
     public Field saveField(Field field) {
+
+        Farm farm = field.getFarm();
+
+        double existingFieldArea =
+                fieldRepository.getTotalAreaByFarmId(farm.getId());
+
+        double totalArea = existingFieldArea + field.getArea();
+
+        if (totalArea > farm.getArea()) {
+            throw new FarmAreaExceededException(
+                    "Field area exceeds the available farm area. "
+                    + "Farm area: " + farm.getArea()
+                    + " acres, already used: " + existingFieldArea
+                    + " acres.");
+        }
+
         return fieldRepository.save(field);
     }
 
@@ -30,13 +48,17 @@ public class FieldService {
 
     public Field updateField(Long id, Field field) {
 
-        Field existingField = fieldRepository.findById(id).orElse(null);
+        Field existingField =
+                fieldRepository.findById(id).orElse(null);
 
         if (existingField != null) {
-            existingField.setFieldName(field.getFieldName());
+
             existingField.setArea(field.getArea());
-            existingField.setCropName(field.getCropName());
+            existingField.setCropSeason(field.getCropSeason());
+            existingField.setGrowthDuration(field.getGrowthDuration());
+            existingField.setSoilType(field.getSoilType());
             existingField.setFarm(field.getFarm());
+            existingField.setCrop(field.getCrop());
 
             return fieldRepository.save(existingField);
         }

@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.agriflow.agriflow.model.Field;
 import com.agriflow.agriflow.service.FieldService;
 
+import jakarta.validation.Valid;
+
 @RestController
 public class FieldController {
 
@@ -23,7 +25,7 @@ public class FieldController {
     }
 
     @PostMapping("/fields")
-    public Field saveField(@RequestBody Field field) {
+    public Field saveField(@Valid @RequestBody Field field) {
         return fieldService.saveField(field);
     }
 

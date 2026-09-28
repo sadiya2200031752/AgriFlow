@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import com.agriflow.agriflow.exception.FieldNotFoundException;
 import com.agriflow.agriflow.model.Field;
 import com.agriflow.agriflow.model.WaterAnalysis;
 import com.agriflow.agriflow.model.WaterRequirement;
@@ -37,7 +38,9 @@ public class WaterAnalysisService {
     public WaterAnalysis analyzeField(Long fieldId) {
 
         Field field = fieldRepository.findById(fieldId)
-                .orElseThrow(() -> new RuntimeException("Field not found with ID: " + fieldId));
+                .orElseThrow(() ->
+                        new FieldNotFoundException(
+                                "Field not found with ID: " + fieldId));
 
         if (field.getFarm() == null) {
             throw new RuntimeException("Farm not assigned to this field");
@@ -76,14 +79,26 @@ public class WaterAnalysisService {
 
         WaterAnalysis analysis = new WaterAnalysis();
 
+        double waterBalance = remainingWater - requiredWater;
+
         analysis.setAvailableWater(remainingWater);
         analysis.setRequiredWater(requiredWater);
         analysis.setUsedWater(totalUsed);
+        analysis.setWaterBalance(waterBalance);
 
         if (remainingWater >= requiredWater) {
             analysis.setStatus("ENOUGH");
+            analysis.setRecommendation(
+                    "Water is sufficient for the current requirement.");
         } else {
             analysis.setStatus("DEFICIT");
+
+            double additionalWater = requiredWater - remainingWater;
+
+            analysis.setRecommendation(
+                    "Water deficit detected. Additional "
+                    + additionalWater
+                    + " L is required.");
         }
 
         return analysis;

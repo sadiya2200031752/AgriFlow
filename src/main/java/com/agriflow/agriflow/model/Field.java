@@ -5,6 +5,9 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.NotBlank;
 
 @Entity
 public class Field {
@@ -13,23 +16,29 @@ public class Field {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String fieldName;
+    @Positive(message = "Field area must be greater than 0")
     private double area;
-    private String cropName;
 
+    @NotBlank(message = "Crop season is required")
+    private String cropSeason;
+
+    @Positive(message = "Growth duration must be greater than 0")
+    private Integer growthDuration;
+
+    @NotBlank(message = "Soil type is required")
+    private String soilType;
+
+    @NotNull(message = "Farm is required")
     @ManyToOne
     private Farm farm;
 
+    @NotNull(message = "Crop is required")
+    @ManyToOne
+    private Crop crop;
+
+
     public Long getId() {
         return id;
-    }
-
-    public String getFieldName() {
-        return fieldName;
-    }
-
-    public void setFieldName(String fieldName) {
-        this.fieldName = fieldName;
     }
 
     public double getArea() {
@@ -40,12 +49,28 @@ public class Field {
         this.area = area;
     }
 
-    public String getCropName() {
-        return cropName;
+    public String getCropSeason() {
+        return cropSeason;
     }
 
-    public void setCropName(String cropName) {
-        this.cropName = cropName;
+    public void setCropSeason(String cropSeason) {
+        this.cropSeason = cropSeason;
+    }
+
+    public Integer getGrowthDuration() {
+        return growthDuration;
+    }
+
+    public void setGrowthDuration(Integer growthDuration) {
+        this.growthDuration = growthDuration;
+    }
+
+    public String getSoilType() {
+        return soilType;
+    }
+
+    public void setSoilType(String soilType) {
+        this.soilType = soilType;
     }
 
     public Farm getFarm() {
@@ -54,5 +79,13 @@ public class Field {
 
     public void setFarm(Farm farm) {
         this.farm = farm;
+    }
+
+    public Crop getCrop() {
+        return crop;
+    }
+
+    public void setCrop(Crop crop) {
+        this.crop = crop;
     }
 }

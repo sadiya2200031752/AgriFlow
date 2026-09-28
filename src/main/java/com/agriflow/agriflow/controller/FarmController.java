@@ -1,7 +1,7 @@
 package com.agriflow.agriflow.controller;
 
 import java.util.List;
-
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -23,7 +23,7 @@ public class FarmController {
     }
 
     @PostMapping("/farms")
-    public Farm saveFarm(@RequestBody Farm farm) {
+    public Farm saveFarm(@Valid @RequestBody Farm farm) {
         return farmService.saveFarm(farm);
     }
 

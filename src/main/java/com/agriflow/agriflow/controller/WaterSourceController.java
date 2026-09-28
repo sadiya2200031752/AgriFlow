@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.agriflow.agriflow.model.WaterSource;
 import com.agriflow.agriflow.service.WaterSourceService;
 
+import jakarta.validation.Valid;
+
 @RestController
 public class WaterSourceController {
 
@@ -23,7 +25,9 @@ public class WaterSourceController {
     }
 
     @PostMapping("/water-sources")
-    public WaterSource saveWaterSource(@RequestBody WaterSource waterSource) {
+    public WaterSource saveWaterSource(
+            @Valid @RequestBody WaterSource waterSource) {
+
         return waterSourceService.saveWaterSource(waterSource);
     }
 

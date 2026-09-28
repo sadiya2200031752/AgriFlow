@@ -1,5 +1,7 @@
 package com.agriflow.agriflow.model;
-
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -12,11 +14,13 @@ public class Farm {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
+   @NotBlank(message="Farm name is required")
     private String farmName;
+   @Positive(message="Farm area must be greater than 0")
     private double area;
+   @NotBlank(message="Farm location is required")
     private String location;
-
+    @NotNull(message="Farmer is required")
     @ManyToOne
     private Farmer farmer;
 
