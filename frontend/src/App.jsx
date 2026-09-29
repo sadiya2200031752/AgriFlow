@@ -1,5 +1,5 @@
-
 import { useEffect, useState } from "react";
+
 import {
   LineChart,
   Line,
@@ -11,13 +11,35 @@ import {
   Tooltip,
   ResponsiveContainer
 } from "recharts";
+
 import "./App.css";
+
 
 function App() {
 
   /* --------------------------------------------------
      DASHBOARD DATA
   -------------------------------------------------- */
+
+  const [dashboardWeather, setDashboardWeather] =
+    useState(null);
+
+  const [dashboardFields, setDashboardFields] =
+    useState([]);
+    const [intelligenceFields, setIntelligenceFields] =
+    useState([]);
+  
+  const [selectedIntelligenceFieldId, setSelectedIntelligenceFieldId] =
+    useState("");
+  
+  const [cropRecommendation, setCropRecommendation] =
+    useState(null);
+  
+  const [recommendationLoading, setRecommendationLoading] =
+    useState(false);
+  
+  const [recommendationError, setRecommendationError] =
+    useState("");
 
   const weatherData = [
     { day: "Mon", temperature: 30, rainfall: 2 },
@@ -29,6 +51,7 @@ function App() {
     { day: "Sun", temperature: 31, rainfall: 2 }
   ];
 
+
   const cropData = [
     { crop: "Rice", fields: 4 },
     { crop: "Cotton", fields: 3 },
@@ -37,62 +60,134 @@ function App() {
   ];
 
 
+  const dashboardWeatherChartData =
+    dashboardWeather?.weather?.hourly?.time?.map(
+      (time, index) => ({
+        day: new Date(time).toLocaleTimeString(
+          [],
+          {
+            hour: "2-digit",
+            minute: "2-digit"
+          }
+        ),
+
+        temperature:
+          dashboardWeather.weather.hourly
+            .temperature_2m[index]
+      })
+    ) || [];
+
+
+  const dashboardCropData =
+    Object.values(
+      dashboardFields.reduce(
+        (result, field) => {
+
+          const cropName =
+            field.crop?.cropName;
+
+          if (!cropName) {
+            return result;
+          }
+
+          if (!result[cropName]) {
+            result[cropName] = {
+              crop: cropName,
+              fields: 0
+            };
+          }
+
+          result[cropName].fields += 1;
+
+          return result;
+
+        },
+        {}
+      )
+    );
+
+
+  console.log(
+    "DASHBOARD FIELDS:",
+    dashboardFields
+  );
+
+  console.log(
+    "DASHBOARD CROP DATA:",
+    dashboardCropData
+  );
+
+
   /* --------------------------------------------------
      CROP OPTIONS
   -------------------------------------------------- */
 
   const cropOptions = [
+
     {
       name: "Rice",
       icon: "🌾",
       growthDuration: 120
     },
+
     {
       name: "Cotton",
       icon: "🌿",
       growthDuration: 160
     },
+
     {
       name: "Maize",
       icon: "🌽",
       growthDuration: 100
     },
+
     {
       name: "Wheat",
       icon: "🌾",
       growthDuration: 120
     },
+
     {
       name: "Groundnut",
       icon: "🥜",
       growthDuration: 110
     },
+
     {
       name: "Tomato",
       icon: "🍅",
       growthDuration: 90
     },
+
     {
       name: "Chilli",
       icon: "🌶️",
       growthDuration: 150
     }
+
   ];
 
+
   const soilOptions = [
+
     "Black soil",
     "Clay soil",
     "Red soil",
     "Sandy soil",
     "Loamy soil",
     "Not specified"
+
   ];
 
+
   const seasonOptions = [
+
     "Kharif",
     "Rabi",
     "Zaid",
     "Year-round"
+
   ];
 
 
@@ -100,33 +195,56 @@ function App() {
      MAIN STATE
   -------------------------------------------------- */
 
-  const [page, setPage] = useState(
-    window.history.state?.page || "login"
-  );
+  const [page, setPage] =
+    useState(
+      window.history.state?.page || "login"
+    );
+
+
   const navigateTo = (nextPage) => {
+
     window.history.pushState(
       { page: nextPage },
       "",
       window.location.pathname
     );
-  
+
     setPage(nextPage);
+
   };
+
+
   const [showPassword, setShowPassword] =
     useState(false);
+
 
   const [farmerName, setFarmerName] =
     useState("");
 
-    const [farmWeather, setFarmWeather] = useState(null);
-    const [weatherLoading, setWeatherLoading] = useState(false);
-    const [weatherError, setWeatherError] = useState("");
+
+  const [farmerId, setFarmerId] =
+    useState(null);
+
+
+  const [farmWeather, setFarmWeather] =
+    useState(null);
+
+
+  const [weatherLoading, setWeatherLoading] =
+    useState(false);
+
+
+  const [weatherError, setWeatherError] =
+    useState("");
+
+
   /* --------------------------------------------------
      LOGIN STATE
   -------------------------------------------------- */
 
   const [loginPhone, setLoginPhone] =
     useState("");
+
 
   const [loginPassword, setLoginPassword] =
     useState("");
@@ -139,11 +257,14 @@ function App() {
   const [signupName, setSignupName] =
     useState("");
 
+
   const [signupPhone, setSignupPhone] =
     useState("");
 
+
   const [signupLocation, setSignupLocation] =
     useState("");
+
 
   const [signupPassword, setSignupPassword] =
     useState("");
@@ -156,11 +277,14 @@ function App() {
   const [showAddFarm, setShowAddFarm] =
     useState(false);
 
+
   const [farmName, setFarmName] =
     useState("");
 
+
   const [farmArea, setFarmArea] =
     useState("");
+
 
   const [farmLocation, setFarmLocation] =
     useState("");
@@ -173,17 +297,22 @@ function App() {
   const [showAddCrop, setShowAddCrop] =
     useState(false);
 
+
   const [selectedFarmId, setSelectedFarmId] =
     useState(null);
+
 
   const [selectedCrop, setSelectedCrop] =
     useState("");
 
+
   const [cropArea, setCropArea] =
     useState("");
 
+
   const [cropSoil, setCropSoil] =
     useState("");
+
 
   const [cropSeason, setCropSeason] =
     useState("");
@@ -193,119 +322,171 @@ function App() {
      FARMS
   -------------------------------------------------- */
 
-  const [farms, setFarms] = useState([
-    {
-      id: 1,
-      name: "Green Farm",
-      location: "Guntur",
-      latitude: 16.3067,
-      longitude: 80.4365,
-      area: 5,
-      icon: "🌾",
-      fields: [
-        {
-          id: 1,
-          area: 2,
-          soilType: "Clay soil",
-          crop: "Rice",
-          cropSeason: "Kharif",
-          growthDuration: 120
-        },
-        {
-          id: 2,
-          area: 3,
-          soilType: "Black soil",
-          crop: "Cotton",
-          cropSeason: "Kharif",
-          growthDuration: 160
-        }
-      ]
-    },
-    {
-      id: 2,
-      name: "Mango Farm",
-      location: "Guntur",
-      latitude: 16.3067,
-      longitude: 80.4365,
-      area: 8,
-      icon: "🌱",
-      fields: []
-    }
-  ]);
+  const [farms, setFarms] =
+    useState([]);
+
 
   /* --------------------------------------------------
      LOGIN
   -------------------------------------------------- */
 
   const handleLogin = async (event) => {
+
     event.preventDefault();
-  
+
     try {
-      const response = await fetch(
-        "http://localhost:8081/farmers"
-      );
-  
+
+      const response =
+        await fetch(
+          "http://localhost:8081/farmers"
+        );
+
+
       if (!response.ok) {
-        throw new Error("Unable to fetch farmers");
+
+        throw new Error(
+          "Unable to fetch farmers"
+        );
+
       }
-  
-      const farmers = await response.json();
-  
-      const farmer = farmers.find(
-        (item) =>
-          String(item.phone).trim() ===
-          String(loginPhone).trim()
-      );
-  
+
+
+      const farmers =
+        await response.json();
+
+
+      const farmer =
+        farmers.find(
+          (item) =>
+            String(item.phone).trim() ===
+            String(loginPhone).trim()
+        );
+
+
       if (!farmer) {
-        alert("No account found with this phone number.");
+
+        alert(
+          "No account found with this phone number."
+        );
+
         return;
       }
-  
-      setFarmerName(farmer.name);
-      navigateTo("dashboard");
-  
+
+
+      setFarmerName(
+        farmer.name
+      );
+
+
+      setFarmerId(
+        farmer.id
+      );
+
+
+      navigateTo(
+        "dashboard"
+      );
+
+
     } catch (error) {
-      console.error("Login error:", error);
-      alert("Unable to login. Please try again.");
+
+      console.error(
+        "Login error:",
+        error
+      );
+
+
+      alert(
+        "Unable to login. Please try again."
+      );
+
     }
+
   };
+
 
   /* --------------------------------------------------
      SIGNUP
   -------------------------------------------------- */
 
   const handleSignup = async (event) => {
+
     event.preventDefault();
-  
+
     try {
-      const response = await fetch("http://localhost:8081/farmers", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          name: signupName,
-          phone: signupPhone,
-          location: signupLocation
-        })
-      });
-  
+
+      const response =
+        await fetch(
+          "http://localhost:8081/farmers",
+          {
+            method: "POST",
+
+            headers: {
+              "Content-Type": "application/json"
+            },
+
+            body: JSON.stringify({
+
+              name: signupName,
+
+              phone: signupPhone,
+
+              location: signupLocation
+
+            })
+
+          }
+        );
+
+
       if (!response.ok) {
-        throw new Error("Signup failed");
+
+        throw new Error(
+          "Signup failed"
+        );
+
       }
-  
-      const farmer = await response.json();
-  
-      console.log("Farmer created:", farmer);
-  
-      setFarmerName(farmer.name);
-      navigateTo("dashboard");
-  
+
+
+      const farmer =
+        await response.json();
+
+
+      console.log(
+        "Farmer created:",
+        farmer
+      );
+
+
+      setFarmerName(
+        farmer.name
+      );
+
+
+      setFarmerId(
+        farmer.id
+      );
+
+
+      navigateTo(
+        "dashboard"
+      );
+
+
     } catch (error) {
-      console.error("Signup error:", error);
-      alert("Unable to create account. Please try again.");
+
+      console.error(
+        "Signup error:",
+        error
+      );
+
+
+      alert(
+        "Unable to create account. Please try again."
+      );
+
     }
+
   };
 
 
@@ -314,143 +495,388 @@ function App() {
   -------------------------------------------------- */
 
   const handleLogout = () => {
-    navigateTo("logout");
-  };
-  useEffect(() => {
-    if (!page.startsWith("farm-")) {
-      return;
-    }
-  
-    const farmId = Number(page.replace("farm-", ""));
-  
-    const farm = farms.find(
-      (item) => item.id === farmId
+
+    navigateTo(
+      "logout"
     );
-  
+
+  };
+
+
+  /* --------------------------------------------------
+     FARM WEATHER
+  -------------------------------------------------- */
+
+  useEffect(() => {
+
+    if (!page.startsWith("farm-")) {
+
+      return;
+
+    }
+
+
+    const farmId =
+      Number(
+        page.replace(
+          "farm-",
+          ""
+        )
+      );
+
+
+    const farm =
+      farms.find(
+        (item) =>
+          item.id === farmId
+      );
+
+
     if (!farm) {
+
+      return;
+
+    }
+
+
+    const fetchFarmWeather =
+      async () => {
+
+        try {
+
+          setWeatherLoading(
+            true
+          );
+
+          setWeatherError(
+            ""
+          );
+
+          setFarmWeather(
+            null
+          );
+
+
+          const response =
+            await fetch(
+              `http://localhost:8081/weather?latitude=${farm.latitude}&longitude=${farm.longitude}`
+            );
+
+
+          if (!response.ok) {
+
+            throw new Error(
+              "Weather request failed"
+            );
+
+          }
+
+
+          const data =
+            await response.json();
+
+
+          setFarmWeather(
+            data
+          );
+
+
+        } catch (error) {
+
+          console.error(
+            "Weather error:",
+            error
+          );
+
+
+          setWeatherError(
+            "Unable to load weather information."
+          );
+
+
+        } finally {
+
+          setWeatherLoading(
+            false
+          );
+
+        }
+
+      };
+
+
+    fetchFarmWeather();
+
+  }, [page, farms]);
+
+
+  /* --------------------------------------------------
+     LOAD FARMER FARMS
+  -------------------------------------------------- */
+
+  useEffect(() => {
+
+    if (!farmerId) {
+
+      return;
+
+    }
+
+
+    const loadFarmerFarms =
+      async () => {
+
+        try {
+
+          const response =
+            await fetch(
+              `http://localhost:8081/farms/farmer/${farmerId}`
+            );
+
+
+          if (!response.ok) {
+
+            throw new Error(
+              "Unable to fetch farms"
+            );
+
+          }
+
+
+          const data =
+            await response.json();
+
+
+          const formattedFarms =
+            data.map(
+              (farm) => ({
+
+                id: farm.id,
+
+                name: farm.farmName,
+
+                location: farm.location,
+
+                area: farm.area,
+
+                latitude: 16.3067,
+
+                longitude: 80.4365,
+
+                icon: "🌾",
+
+                fields: []
+
+              })
+            );
+
+
+          setFarms(
+            formattedFarms
+          );
+
+
+        } catch (error) {
+
+          console.error(
+            "Farm loading error:",
+            error
+          );
+
+        }
+
+      };
+
+
+    loadFarmerFarms();
+
+  }, [farmerId]);
+
+  useEffect(() => {
+    if (
+      page !== "crop-intelligence" ||
+      !farmerId
+    ) {
       return;
     }
   
-    const fetchFarmWeather = async () => {
+    const loadIntelligenceFields = async () => {
       try {
-        setWeatherLoading(true);
-        setWeatherError("");
-        setFarmWeather(null);
-  
-        const response = await fetch(
-          `http://localhost:8081/weather?latitude=${farm.latitude}&longitude=${farm.longitude}`
-        );
+        const response =
+          await fetch(
+            `http://localhost:8081/fields/farmer/${farmerId}`
+          );
   
         if (!response.ok) {
-          throw new Error("Weather request failed");
+          throw new Error(
+            "Unable to fetch fields"
+          );
         }
   
-        const data = await response.json();
+        const data =
+          await response.json();
   
-        setFarmWeather(data);
+        setIntelligenceFields(data);
+  
       } catch (error) {
-        console.error("Weather error:", error);
-        setWeatherError(
-          "Unable to load weather information."
+        console.error(
+          "Crop intelligence field loading error:",
+          error
         );
-      } finally {
-        setWeatherLoading(false);
       }
     };
   
-    fetchFarmWeather();
-  }, [page, farms]);
+    loadIntelligenceFields();
+  
+  }, [page, farmerId]);
+  /* --------------------------------------------------
+     LOAD DASHBOARD WEATHER
+  -------------------------------------------------- */
+
+  useEffect(() => {
+
+    const loadDashboardWeather =
+      async () => {
+
+        try {
+
+          const response =
+            await fetch(
+              "http://localhost:8081/weather?latitude=16.3067&longitude=80.4365"
+            );
+
+
+          if (!response.ok) {
+
+            throw new Error(
+              "Unable to fetch weather"
+            );
+
+          }
+
+
+          const data =
+            await response.json();
+
+
+          console.log(
+            "DASHBOARD WEATHER:",
+            data
+          );
+
+
+          setDashboardWeather(
+            data
+          );
+
+
+        } catch (error) {
+
+          console.error(
+            "Dashboard weather error:",
+            error
+          );
+
+        }
+
+      };
+
+
+    loadDashboardWeather();
+
+  }, []);
+
+
+  /* --------------------------------------------------
+     LOAD DASHBOARD FIELDS
+  -------------------------------------------------- */
+
+  useEffect(() => {
+
+    if (!farmerId) {
+
+      return;
+
+    }
+
+
+    const loadDashboardFields =
+      async () => {
+        console.log("CURRENT FARMER ID:", farmerId);
+        try {
+
+          const response =
+            await fetch(
+              `http://localhost:8081/fields/farmer/${farmerId}`
+            );
+
+
+          if (!response.ok) {
+
+            throw new Error(
+              "Unable to fetch fields"
+            );
+
+          }
+
+
+          const data =
+            await response.json();
+
+
+          setDashboardFields(
+            data
+          );
+
+
+        } catch (error) {
+
+          console.error(
+            "Dashboard fields error:",
+            error
+          );
+
+        }
+
+      };
+
+
+    loadDashboardFields();
+
+  }, [farmerId]);
+
 
   /* --------------------------------------------------
      ADD FARM
   -------------------------------------------------- */
-
-  const handleAddFarm = (event) => {
-    event.preventDefault();
-
-    const newFarm = {
-      id: Date.now(),
-
-      name: farmName,
-
-      location: farmLocation,
-
-      area: Number(farmArea),
-
-      icon: "🌾",
-
-      fields: []
-    };
-
-    setFarms((currentFarms) => [
-      ...currentFarms,
-      newFarm
-    ]);
-
-    setFarmName("");
-    setFarmArea("");
-    setFarmLocation("");
-
-    setShowAddFarm(false);
-  };
-
-
-  /* --------------------------------------------------
-     OPEN ADD CROP
-  -------------------------------------------------- */
-
-  const openAddCrop = (farmId) => {
-
-    setSelectedFarmId(farmId);
-
-    setSelectedCrop("");
-
-    setCropArea("");
-
-    setCropSoil("");
-
-    setCropSeason("");
-
-    setShowAddCrop(true);
-  };
-
-
-  /* --------------------------------------------------
-     CLOSE ADD CROP
-  -------------------------------------------------- */
-
-  const closeAddCrop = () => {
-
-    setShowAddCrop(false);
-
-    setSelectedFarmId(null);
-
-    setSelectedCrop("");
-
-    setCropArea("");
-
-    setCropSoil("");
-
-    setCropSeason("");
-  };
 
 
   /* --------------------------------------------------
      ADD CROP
   -------------------------------------------------- */
 
-  const handleAddCrop = (event) => {
+  const handleAddCrop = async (event) => {
 
     event.preventDefault();
 
-    const selectedFarm = farms.find(
-      (farm) =>
-        farm.id === selectedFarmId
-    );
+
+    const selectedFarm =
+      farms.find(
+        (farm) =>
+          farm.id === selectedFarmId
+      );
+
 
     if (!selectedFarm) {
+
+      alert(
+        "Please select a farm."
+      );
+
       return;
+
     }
+
 
     const usedArea =
       selectedFarm.fields.reduce(
@@ -459,32 +885,48 @@ function App() {
         0
       );
 
+
     const availableArea =
-      selectedFarm.area - usedArea;
+      selectedFarm.area -
+      usedArea;
+
 
     const newCropArea =
       Number(cropArea);
 
+
     if (!selectedCrop) {
 
-      alert("Please select a crop.");
+      alert(
+        "Please select a crop."
+      );
 
       return;
+
     }
+
 
     if (!cropSoil) {
 
-      alert("Please select the soil type.");
+      alert(
+        "Please select the soil type."
+      );
 
       return;
+
     }
+
 
     if (!cropSeason) {
 
-      alert("Please select the growing season.");
+      alert(
+        "Please select the growing season."
+      );
 
       return;
+
     }
+
 
     if (
       !newCropArea ||
@@ -496,10 +938,13 @@ function App() {
       );
 
       return;
+
     }
 
+
     if (
-      newCropArea > availableArea
+      newCropArea >
+      availableArea
     ) {
 
       alert(
@@ -507,7 +952,9 @@ function App() {
       );
 
       return;
+
     }
+
 
     const selectedCropData =
       cropOptions.find(
@@ -515,1894 +962,1423 @@ function App() {
           item.name === selectedCrop
       );
 
+
     if (!selectedCropData) {
 
-      alert("Please select a valid crop.");
+      alert(
+        "Please select a valid crop."
+      );
 
       return;
+
     }
 
 
-    /* ----------------------------------------------
-       CREATE FIELD RECORD
-       Field name is generated internally.
-    ---------------------------------------------- */
+    try {
 
-    const newField = {
+      /* ----------------------------------------------
+         GET CROP FROM DATABASE
+      ---------------------------------------------- */
 
-      id: Date.now(),
-
-      name:
-        `Field ${selectedFarm.fields.length + 1}`,
-
-      area: newCropArea,
-
-      soilType: cropSoil,
-
-      crop:
-        selectedCropData.name,
-
-      cropSeason: cropSeason,
-
-      growthDuration:
-        selectedCropData.growthDuration
-    };
+      const cropResponse =
+        await fetch(
+          "http://localhost:8081/crops"
+        );
 
 
-    /* ----------------------------------------------
-       UPDATE FARM
-    ---------------------------------------------- */
+      if (!cropResponse.ok) {
 
-    setFarms((currentFarms) =>
-      currentFarms.map((farm) => {
+        throw new Error(
+          "Unable to fetch crops"
+        );
 
-        if (
-          farm.id !== selectedFarmId
-        ) {
-          return farm;
-        }
+      }
 
-        return {
-          ...farm,
 
-          fields: [
-            ...farm.fields,
-            newField
-          ]
-        };
-      })
+      const crops =
+        await cropResponse.json();
+
+
+      const databaseCrop =
+        crops.find(
+          (crop) =>
+            crop.cropName ===
+            selectedCropData.name
+        );
+
+
+      if (!databaseCrop) {
+
+        alert(
+          "Selected crop is not available in the database."
+        );
+
+        return;
+
+      }
+
+
+      /* ----------------------------------------------
+         SAVE FIELD TO DATABASE
+      ---------------------------------------------- */
+
+      const response =
+        await fetch(
+          "http://localhost:8081/fields",
+          {
+            method: "POST",
+
+            headers: {
+              "Content-Type": "application/json"
+            },
+
+            body: JSON.stringify({
+
+              area:
+                newCropArea,
+
+              cropSeason:
+                cropSeason,
+
+              growthDuration:
+                selectedCropData.growthDuration,
+
+              soilType:
+                cropSoil,
+
+              farm: {
+                id:
+                  selectedFarm.id
+              },
+
+              crop: {
+                id:
+                  databaseCrop.id
+              }
+
+            })
+
+          }
+        );
+
+
+      if (!response.ok) {
+
+        throw new Error(
+          "Unable to save field"
+        );
+
+      }
+
+
+      const savedField =
+        await response.json();
+
+
+      /* ----------------------------------------------
+         UPDATE FRONTEND
+      ---------------------------------------------- */
+
+      const newField = {
+
+        id:
+          savedField.id,
+
+        name:
+          `Field ${selectedFarm.fields.length + 1}`,
+
+        area:
+          savedField.area,
+
+        soilType:
+          savedField.soilType,
+
+        crop:
+          savedField.crop?.cropName ||
+          selectedCropData.name,
+
+        cropSeason:
+          savedField.cropSeason,
+
+        growthDuration:
+          savedField.growthDuration
+
+      };
+
+
+      setFarms(
+        (currentFarms) =>
+          currentFarms.map(
+            (farm) => {
+
+              if (
+                farm.id !==
+                selectedFarmId
+              ) {
+
+                return farm;
+
+              }
+
+
+              return {
+
+                ...farm,
+
+                fields: [
+                  ...farm.fields,
+                  newField
+                ]
+
+              };
+
+            }
+          )
+      );
+
+
+      /* ----------------------------------------------
+         RELOAD DASHBOARD FIELDS
+      ---------------------------------------------- */
+
+      const fieldsResponse =
+        await fetch(
+          `http://localhost:8081/fields/farmer/${farmerId}`
+        );
+
+
+      if (
+        fieldsResponse.ok
+      ) {
+
+        const fields =
+          await fieldsResponse.json();
+
+        setDashboardFields(
+          fields
+        );
+
+      }
+
+
+      closeAddCrop();
+
+
+    } catch (error) {
+
+      console.error(
+        "Add field error:",
+        error
+      );
+
+
+      alert(
+        "Unable to save crop/field."
+      );
+
+    }
+
+  };
+
+
+  /* --------------------------------------------------
+     CLOSE ADD CROP
+  -------------------------------------------------- */
+
+  const closeAddCrop = () => {
+
+    setShowAddCrop(
+      false
     );
 
+    setSelectedFarmId(
+      null
+    );
 
-    closeAddCrop();
+    setSelectedCrop(
+      ""
+    );
+
+    setCropArea(
+      ""
+    );
+
+    setCropSoil(
+      ""
+    );
+
+    setCropSeason(
+      ""
+    );
+
   };
+  const handleCropRecommendation =
+  async () => {
+
+    setRecommendationError("");
+    setCropRecommendation(null);
+
+    if (
+      !selectedIntelligenceFieldId
+    ) {
+      setRecommendationError(
+        "Please select a field first."
+      );
+      return;
+    }
+
+    const selectedField =
+      intelligenceFields.find(
+        (field) =>
+          String(field.id) ===
+          String(
+            selectedIntelligenceFieldId
+          )
+      );
+
+    if (!selectedField) {
+      setRecommendationError(
+        "Selected field was not found."
+      );
+      return;
+    }
+
+    setRecommendationLoading(true);
+
+    try {
+
+      const response =
+        await fetch(
+          `http://localhost:8081/recommend-crop-with-weather?latitude=16.3067&longitude=80.4365&soilType=${encodeURIComponent(
+            selectedField.soilType
+          )}`
+        );
+
+      if (!response.ok) {
+        throw new Error(
+          "Unable to get crop recommendation"
+        );
+      }
+
+      const data =
+        await response.json();
+
+      setCropRecommendation(data);
+
+    } catch (error) {
+
+      console.error(
+        "Crop recommendation error:",
+        error
+      );
+
+      setRecommendationError(
+        "Unable to generate crop recommendation."
+      );
+
+    } finally {
+
+      setRecommendationLoading(false);
+
+    }
+  };
+
+  /* --------------------------------------------------
+     BROWSER NAVIGATION
+  -------------------------------------------------- */
+
   useEffect(() => {
-    const handleBrowserNavigation = (event) => {
-      const nextPage =
-        event.state?.page || "login";
-  
-      setPage(nextPage);
-    };
-  
+
+    const handleBrowserNavigation =
+      (event) => {
+
+        const nextPage =
+          event.state?.page ||
+          "login";
+
+
+        setPage(
+          nextPage
+        );
+
+      };
+
+
     window.addEventListener(
       "popstate",
       handleBrowserNavigation
     );
-  
+
+
     return () => {
+
       window.removeEventListener(
         "popstate",
         handleBrowserNavigation
       );
+
     };
+
   }, []);
 
-  /* --------------------------------------------------
-     LOGIN PAGE
-  -------------------------------------------------- */
 
-  if (page === "login") {
-
-    return (
-
-      <div className="auth-page">
-
-        <div className="auth-overlay"></div>
 
-        <div className="auth-content">
 
-          <div className="brand">
 
-            <div className="brand-icon">
-              🌱
-            </div>
 
-            <div>
 
-              <h1>
-                AgriFlow
-              </h1>
 
-              <p>
-                Smart agriculture. Better decisions.
-              </p>
 
-            </div>
 
-          </div>
 
+/* --------------------------------------------------
+   LOGIN PAGE
+-------------------------------------------------- */
 
-          <div className="auth-card">
+if (page === "login") {
 
-            <div className="welcome-icon">
-              🌾
-            </div>
+  return (
 
-            <h2>
-              Welcome back
-            </h2>
+    <div className="auth-page">
 
-            <p className="auth-subtitle">
-              Continue your journey towards
-              smarter farming.
-            </p>
+      <div className="auth-overlay"></div>
 
+      <div className="auth-content">
 
-            <form
-              onSubmit={handleLogin}
-            >
+        <div className="brand">
 
-              <label>
-                Phone Number
-              </label>
-
-              <input
-                type="tel"
-                placeholder="Enter your phone number"
-                value={loginPhone}
-                onChange={(event) =>
-                  setLoginPhone(
-                    event.target.value
-                  )
-                }
-                required
-              />
-
-
-              <label>
-                Password
-              </label>
-
-              <div className="password-box">
-
-                <input
-                  type={
-                    showPassword
-                      ? "text"
-                      : "password"
-                  }
-                  placeholder="Enter your password"
-                  value={loginPassword}
-                  onChange={(event) =>
-                    setLoginPassword(
-                      event.target.value
-                    )
-                  }
-                  required
-                />
-
-                <button
-                  type="button"
-                  className="password-toggle"
-                  onClick={() =>
-                    setShowPassword(
-                      !showPassword
-                    )
-                  }
-                >
-                  {showPassword
-                    ? "🙈"
-                    : "👁️"}
-                </button>
-
-              </div>
-
-
-              <button
-                className="primary-button"
-                type="submit"
-              >
-                Sign In →
-              </button>
-
-            </form>
-
-
-            <div className="divider">
-              <span>
-                or
-              </span>
-            </div>
-
-
-            <p className="switch-text">
-
-              New to AgriFlow?{" "}
-
-              <button
-  onClick={() =>
-    navigateTo("signup")
-  }
->
-  Create an account
-</button>
-
-            </p>
-
-          </div>
-
-
-          <div className="auth-footer">
-            🌱 Growing smarter, one decision at a time.
-          </div>
-
-        </div>
-
-      </div>
-    );
-  }
-
-
-  /* --------------------------------------------------
-     SIGNUP PAGE
-  -------------------------------------------------- */
-
-  if (page === "signup") {
-
-    return (
-
-      <div className="auth-page signup-page">
-
-        <div className="auth-overlay"></div>
-
-        <div className="auth-content">
-
-          <div className="brand">
-
-            <div className="brand-icon">
-              🌱
-            </div>
-
-            <div>
-
-              <h1>
-                AgriFlow
-              </h1>
-
-              <p>
-                Your farm. Your data. Your decisions.
-              </p>
-
-            </div>
-
-          </div>
-
-
-          <div className="auth-card signup-card">
-
-            <div className="welcome-icon">
-              👨‍🌾
-            </div>
-
-            <h2>
-              Create your account
-            </h2>
-
-            <p className="auth-subtitle">
-              Start managing your farm with
-              smarter agricultural insights.
-            </p>
-
-
-            <form
-              onSubmit={handleSignup}
-            >
-
-              <label>
-                Farmer Name
-              </label>
-
-              <input
-                type="text"
-                placeholder="Enter your name"
-                value={signupName}
-                onChange={(event) =>
-                  setSignupName(
-                    event.target.value
-                  )
-                }
-                required
-              />
-
-
-              <label>
-                Phone Number
-              </label>
-
-              <input
-                type="tel"
-                placeholder="10-digit phone number"
-                value={signupPhone}
-                onChange={(event) =>
-                  setSignupPhone(
-                    event.target.value
-                  )
-                }
-                required
-              />
-
-
-              <label>
-                Location
-              </label>
-
-              <input
-                type="text"
-                placeholder="Village / City"
-                value={signupLocation}
-                onChange={(event) =>
-                  setSignupLocation(
-                    event.target.value
-                  )
-                }
-                required
-              />
-
-
-              <label>
-                Password
-              </label>
-
-              <input
-                type="password"
-                placeholder="Create a password"
-                value={signupPassword}
-                onChange={(event) =>
-                  setSignupPassword(
-                    event.target.value
-                  )
-                }
-                required
-              />
-
-
-              <button
-                className="primary-button"
-                type="submit"
-              >
-                Create Account →
-              </button>
-
-            </form>
-
-
-            <p className="switch-text">
-
-              Already have an account?{" "}
-
-              <button
-  onClick={() =>
-    navigateTo("login")
-  }
->
-  Sign in
-</button>
-
-            </p>
-
-          </div>
-
-
-          <div className="auth-footer">
-            🌾 Better farming begins with better information.
-          </div>
-
-        </div>
-
-      </div>
-    );
-  }
-
-
-  /* --------------------------------------------------
-     LOGOUT PAGE
-  -------------------------------------------------- */
-
-  if (page === "logout") {
-
-    return (
-
-      <div className="logout-page">
-
-        <div className="logout-sun"></div>
-
-        <div className="logout-content">
-
-          <div className="logout-seed">
+          <div className="brand-icon">
             🌱
           </div>
 
-          <h1>
-            Every harvest begins with a decision.
-          </h1>
+          <div>
 
-          <p>
-            Agriculture feeds communities, supports
-            livelihoods and shapes our future. With
-            better information and technology, every
-            farming decision can become smarter.
+            <h1>
+              AgriFlow
+            </h1>
+
+            <p>
+              Smart agriculture. Better decisions.
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <div className="auth-card">
+
+          <div className="welcome-icon">
+            🌾
+          </div>
+
+          <h2>
+            Welcome back
+          </h2>
+
+          <p className="auth-subtitle">
+            Continue your journey towards
+            smarter farming.
           </p>
 
 
-          <div className="growth-animation">
-
-            <span className="seed">
-              🌱
-            </span>
-
-            <span className="arrow">
-              →
-            </span>
-
-            <span className="plant">
-              🌿
-            </span>
-
-            <span className="arrow">
-              →
-            </span>
-
-            <span className="crop">
-              🌾
-            </span>
-
-          </div>
-
-
-          <div className="logout-message">
-
-            <strong>
-              You have been signed out.
-            </strong>
-
-            <span>
-              Thank you for growing with AgriFlow.
-            </span>
-
-          </div>
-
-
-          <button
-            className="primary-button logout-button"
-            onClick={() =>
-              navigateTo("login")
-            }
+          <form
+            onSubmit={handleLogin}
           >
-            Return to AgriFlow
-          </button>
 
-        </div>
-
-
-        <div className="farm-silhouette">
-
-          <span>🌾</span>
-          <span>🌾</span>
-          <span>🌾</span>
-          <span>🌾</span>
-          <span>🌾</span>
-          <span>🌾</span>
-          <span>🌾</span>
-
-        </div>
-
-      </div>
-    );
-  }
-
-
-  /* --------------------------------------------------
-     SIDEBAR
-  -------------------------------------------------- */
-
-  const Sidebar = () => (
-
-    <aside className="sidebar">
-
-      <div className="sidebar-brand">
-
-        <span>
-          🌱
-        </span>
-
-        <div>
-
-          <strong>
-            AgriFlow
-          </strong>
-
-          <small>
-            Smart Farming
-          </small>
-
-        </div>
-
-      </div>
-
-
-      <nav>
-
-        <button
-          className={`nav-item ${
-            page === "dashboard"
-              ? "active"
-              : ""
-          }`}
-          onClick={() =>
-            navigateTo("dashboard")
-          }
-        >
-          <span>📊</span>
-          Dashboard
-        </button>
-
-
-        {/* <button className="nav-item">
-          <span>👨‍🌾</span>
-          My Profile
-        </button> */}
-
-
-        <button
-          className={`nav-item ${
-            page === "farms"
-              ? "active"
-              : ""
-          }`}
-          onClick={() =>
-            navigateTo("farms")
-          }
-        >
-          <span>🌾</span>
-          My Farms
-        </button>
-
-
-        <button className="nav-item">
-          <span>🌱</span>
-          Fields & Crops
-        </button>
-
-
-        <button className="nav-item">
-          <span>☁️</span>
-          Weather
-        </button>
-
-
-        <button className="nav-item">
-          <span>🤖</span>
-          Crop Intelligence
-        </button>
-
-
-        <button className="nav-item">
-          <span>📰</span>
-          Agriculture Insights
-        </button>
-
-      </nav>
-
-
-      <div className="sidebar-actions">
-
-        <button className="nav-item">
-
-          <span>
-            ⚙️
-          </span>
-
-          Settings
-
-        </button>
-
-
-        <button
-          className="nav-item logout-nav"
-          onClick={handleLogout}
-        >
-
-          <span>
-            🚪
-          </span>
-
-          Sign Out
-
-        </button>
-
-      </div>
-
-    </aside>
-  );
-
-
-  /* --------------------------------------------------
-     MY FARMS PAGE
-  -------------------------------------------------- */
-
-  if (page === "farms") {
-
-    const totalFields =
-      farms.reduce(
-        (total, farm) =>
-          total + farm.fields.length,
-        0
-      );
-
-
-    const totalArea =
-      farms.reduce(
-        (total, farm) =>
-          total + farm.area,
-        0
-      );
-
-
-    return (
-
-      <div className="dashboard">
-
-        <Sidebar />
-
-
-        <main className="dashboard-main">
-
-
-          <header className="dashboard-header">
-
-            <div>
-
-              <p className="dashboard-label">
-                FARM MANAGEMENT
-              </p>
-
-              <h1>
-                My Farms 🌾
-              </h1>
-
-              <p className="dashboard-subtitle">
-                Manage your farms and keep track
-                of your agricultural land.
-              </p>
+            <label>
+              Phone Number
+            </label>
+
+            <input
+              type="tel"
+              placeholder="Enter your phone number"
+              value={loginPhone}
+              onChange={(event) =>
+                setLoginPhone(
+                  event.target.value
+                )
+              }
+              required
+            />
+
+
+            <label>
+              Password
+            </label>
+
+            <div className="password-box">
+
+              <input
+                type={
+                  showPassword
+                    ? "text"
+                    : "password"
+                }
+                placeholder="Enter your password"
+                value={loginPassword}
+                onChange={(event) =>
+                  setLoginPassword(
+                    event.target.value
+                  )
+                }
+                required
+              />
+
+              <button
+                type="button"
+                className="password-toggle"
+                onClick={() =>
+                  setShowPassword(
+                    !showPassword
+                  )
+                }
+              >
+                {showPassword
+                  ? "🙈"
+                  : "👁️"}
+              </button>
 
             </div>
 
 
             <button
               className="primary-button"
-              onClick={() =>
-                setShowAddFarm(true)
-              }
+              type="submit"
             >
-              + Add Farm
+              Sign In →
             </button>
 
-          </header>
+          </form>
 
 
-          {/* FARM SUMMARY */}
-
-          <section className="farm-summary-grid">
-
-
-            <div className="farm-summary-card">
-
-              <span>
-                🌾
-              </span>
-
-              <div>
-
-                <small>
-                  Total Farms
-                </small>
-
-                <strong>
-                  {farms.length}
-                </strong>
-
-              </div>
-
-            </div>
+          <div className="divider">
+            <span>
+              or
+            </span>
+          </div>
 
 
-            <div className="farm-summary-card">
+          <p className="switch-text">
 
-              <span>
-                📐
-              </span>
+            New to AgriFlow?{" "}
 
-              <div>
+            <button
+              onClick={() =>
+                navigateTo("signup")
+              }
+            >
+              Create an account
+            </button>
 
-                <small>
-                  Total Area
-                </small>
+          </p>
 
-                <strong>
-                  {totalArea} acres
-                </strong>
-
-              </div>
-
-            </div>
+        </div>
 
 
-            <div className="farm-summary-card">
+        <div className="auth-footer">
+          🌱 Growing smarter, one decision at a time.
+        </div>
 
-              <span>
+      </div>
+
+    </div>
+  );
+}
+
+
+/* --------------------------------------------------
+   SIGNUP PAGE
+-------------------------------------------------- */
+
+if (page === "signup") {
+
+  return (
+
+    <div className="auth-page signup-page">
+
+      <div className="auth-overlay"></div>
+
+      <div className="auth-content">
+
+        <div className="brand">
+
+          <div className="brand-icon">
+            🌱
+          </div>
+
+          <div>
+
+            <h1>
+              AgriFlow
+            </h1>
+
+            <p>
+              Your farm. Your data. Your decisions.
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <div className="auth-card signup-card">
+
+          <div className="welcome-icon">
+            👨‍🌾
+          </div>
+
+          <h2>
+            Create your account
+          </h2>
+
+          <p className="auth-subtitle">
+            Start managing your farm with
+            smarter agricultural insights.
+          </p>
+
+
+          <form
+            onSubmit={handleSignup}
+          >
+
+            <label>
+              Farmer Name
+            </label>
+
+            <input
+              type="text"
+              placeholder="Enter your name"
+              value={signupName}
+              onChange={(event) =>
+                setSignupName(
+                  event.target.value
+                )
+              }
+              required
+            />
+
+
+            <label>
+              Phone Number
+            </label>
+
+            <input
+              type="tel"
+              placeholder="10-digit phone number"
+              value={signupPhone}
+              onChange={(event) =>
+                setSignupPhone(
+                  event.target.value
+                )
+              }
+              required
+            />
+
+
+            <label>
+              Location
+            </label>
+
+            <input
+              type="text"
+              placeholder="Village / City"
+              value={signupLocation}
+              onChange={(event) =>
+                setSignupLocation(
+                  event.target.value
+                )
+              }
+              required
+            />
+
+
+            <label>
+              Password
+            </label>
+
+            <input
+              type="password"
+              placeholder="Create a password"
+              value={signupPassword}
+              onChange={(event) =>
+                setSignupPassword(
+                  event.target.value
+                )
+              }
+              required
+            />
+
+
+            <button
+              className="primary-button"
+              type="submit"
+            >
+              Create Account →
+            </button>
+
+          </form>
+
+
+          <p className="switch-text">
+
+            Already have an account?{" "}
+
+            <button
+              onClick={() =>
+                navigateTo("login")
+              }
+            >
+              Sign in
+            </button>
+
+          </p>
+
+        </div>
+
+
+        <div className="auth-footer">
+          🌾 Better farming begins with better information.
+        </div>
+
+      </div>
+
+    </div>
+  );
+}
+
+
+/* --------------------------------------------------
+   LOGOUT PAGE
+-------------------------------------------------- */
+
+if (page === "logout") {
+
+  return (
+
+    <div className="logout-page">
+
+      <div className="logout-sun"></div>
+
+      <div className="logout-content">
+
+        <div className="logout-seed">
+          🌱
+        </div>
+
+        <h1>
+          Every harvest begins with a decision.
+        </h1>
+
+        <p>
+          Agriculture feeds communities, supports
+          livelihoods and shapes our future. With
+          better information and technology, every
+          farming decision can become smarter.
+        </p>
+
+
+        <div className="growth-animation">
+
+          <span className="seed">
+            🌱
+          </span>
+
+          <span className="arrow">
+            →
+          </span>
+
+          <span className="plant">
+            🌿
+          </span>
+
+          <span className="arrow">
+            →
+          </span>
+
+          <span className="crop">
+            🌾
+          </span>
+
+        </div>
+
+
+        <div className="logout-message">
+
+          <strong>
+            You have been signed out.
+          </strong>
+
+          <span>
+            Thank you for growing with AgriFlow.
+          </span>
+
+        </div>
+
+
+        <button
+          className="primary-button logout-button"
+          onClick={() =>
+            navigateTo("login")
+          }
+        >
+          Return to AgriFlow
+        </button>
+
+      </div>
+
+
+      <div className="farm-silhouette">
+
+        <span>🌾</span>
+        <span>🌾</span>
+        <span>🌾</span>
+        <span>🌾</span>
+        <span>🌾</span>
+        <span>🌾</span>
+        <span>🌾</span>
+
+      </div>
+
+    </div>
+  );
+}
+
+
+/* --------------------------------------------------
+   SIDEBAR
+-------------------------------------------------- */
+
+const Sidebar = () => (
+
+  <aside className="sidebar">
+
+    <div className="sidebar-brand">
+
+      <span>
+        🌱
+      </span>
+
+      <div>
+
+        <strong>
+          AgriFlow
+        </strong>
+
+        <small>
+          Smart Farming
+        </small>
+
+      </div>
+
+    </div>
+
+
+    <nav>
+
+      <button
+        className={`nav-item ${page === "dashboard"
+            ? "active"
+            : ""
+          }`}
+        onClick={() =>
+          navigateTo("dashboard")
+        }
+      >
+        <span>📊</span>
+        Dashboard
+      </button>
+
+
+      {/* <button className="nav-item">
+          <span>👨‍🌾</span>
+          My Profile
+        </button> */}
+
+
+      <button
+        className={`nav-item ${page === "farms"
+            ? "active"
+            : ""
+          }`}
+        onClick={() =>
+          navigateTo("farms")
+        }
+      >
+        <span>🌾</span>
+        My Farms
+      </button>
+
+
+      <button className="nav-item">
+        <span>🌱</span>
+        Fields & Crops
+      </button>
+
+
+      <button className="nav-item">
+        <span>☁️</span>
+        Weather
+      </button>
+
+
+      <button
+  className={`nav-item ${
+    page === "crop-intelligence"
+      ? "active"
+      : ""
+  }`}
+  onClick={() =>
+    navigateTo("crop-intelligence")
+  }
+>
+  <span>🤖</span>
+  Crop Intelligence
+</button>
+
+
+      <button className="nav-item">
+        <span>📰</span>
+        Agriculture Insights
+      </button>
+
+    </nav>
+
+
+    <div className="sidebar-actions">
+
+      <button className="nav-item">
+
+        <span>
+          ⚙️
+        </span>
+
+        Settings
+
+      </button>
+
+
+      <button
+        className="nav-item logout-nav"
+        onClick={handleLogout}
+      >
+
+        <span>
+          🚪
+        </span>
+
+        Sign Out
+
+      </button>
+
+    </div>
+
+  </aside>
+);
+
+/* --------------------------------------------------
+   CROP INTELLIGENCE PAGE
+-------------------------------------------------- */
+
+if (page === "crop-intelligence") {
+
+  return (
+
+    <div className="dashboard">
+
+      <Sidebar />
+
+      <main className="dashboard-main">
+
+        <header className="dashboard-header">
+
+          <div>
+
+            <p className="dashboard-label">
+              AI-POWERED AGRICULTURE
+            </p>
+
+            <h1>
+              Crop Intelligence 🤖
+            </h1>
+
+            <p className="dashboard-subtitle">
+              Use your field conditions and live
+              weather to get an ML-based crop
+              recommendation.
+            </p>
+
+          </div>
+
+        </header>
+
+
+        {/* FIELD SELECTION */}
+
+        <section className="dashboard-card">
+
+          <div className="card-heading">
+
+            <div>
+
+              <span className="heading-icon">
                 🌱
               </span>
 
               <div>
 
-                <small>
-                  Total Crops
-                </small>
+                <h2>
+                  Analyze a Field
+                </h2>
 
-                <strong>
-                  {totalFields}
-                </strong>
+                <p>
+                  Select one of your fields to
+                  generate a crop recommendation.
+                </p>
 
               </div>
-
-            </div>
-
-          </section>
-
-
-          {/* FARM SECTION */}
-
-          <div className="farm-section-heading">
-
-            <div>
-
-              <h2>
-                Your Farms
-              </h2>
-
-              <p>
-                Select a farm to manage its crops
-                and agricultural information.
-              </p>
 
             </div>
 
           </div>
 
 
-          <section className="farm-grid">
+          {intelligenceFields.length === 0 ? (
 
-            {farms.map(
-              (farm) => (
+            <div className="farm-empty-state">
 
-                <div
-                  className="farm-card"
-                  key={farm.id}
-                >
+              <span>
+                🌾
+              </span>
 
-                  <div className="farm-card-top">
+              <h3>
+                No fields available
+              </h3>
 
-                    <span className="farm-icon">
-                      {farm.icon}
-                    </span>
-
-                    <span className="farm-status">
-                      ACTIVE
-                    </span>
-
-                  </div>
-
-
-                  <h2>
-                    {farm.name}
-                  </h2>
-
-
-                  <p className="farm-location">
-                    📍 {farm.location}
-                  </p>
-
-
-                  <div className="farm-details">
-
-                    <div>
-
-                      <span>
-                        Farm Area
-                      </span>
-
-                      <strong>
-                        {farm.area} acres
-                      </strong>
-
-                    </div>
-
-
-                    <div>
-
-                      <span>
-                        Crops
-                      </span>
-
-                      <strong>
-                        {farm.fields.length}
-                      </strong>
-
-                    </div>
-
-                  </div>
-
-
-                  <button
-                    className="farm-view-button"
-                    onClick={() =>
-                      navigateTo(
-                        `farm-${farm.id}`
-                      )
-                    }
-                  >
-                    View Farm →
-                  </button>
-
-                </div>
-
-              )
-            )}
-
-          </section>
-
-
-          {/* ADD FARM MODAL */}
-
-          {showAddFarm && (
-
-            <div className="farm-modal-overlay">
-
-              <div className="farm-modal">
-
-
-                <div className="farm-modal-header">
-
-                  <div>
-
-                    <span>
-                      🌾
-                    </span>
-
-                    <div>
-
-                      <h2>
-                        Add New Farm
-                      </h2>
-
-                      <p>
-                        Enter the basic details
-                        of your farm.
-                      </p>
-
-                    </div>
-
-                  </div>
-
-
-                  <button
-                    type="button"
-                    className="modal-close"
-                    onClick={() =>
-                      setShowAddFarm(false)
-                    }
-                  >
-                    ×
-                  </button>
-
-                </div>
-
-
-                <form
-                  onSubmit={handleAddFarm}
-                >
-
-                  <label>
-                    Farm Name
-                  </label>
-
-                  <input
-                    type="text"
-                    placeholder="Example: Green Farm"
-                    value={farmName}
-                    onChange={(event) =>
-                      setFarmName(
-                        event.target.value
-                      )
-                    }
-                    required
-                  />
-
-
-                  <label>
-                    Farm Area
-                  </label>
-
-                  <div className="farm-input-with-unit">
-
-                    <input
-                      type="number"
-                      min="0.1"
-                      step="0.1"
-                      placeholder="Enter farm area"
-                      value={farmArea}
-                      onChange={(event) =>
-                        setFarmArea(
-                          event.target.value
-                        )
-                      }
-                      required
-                    />
-
-                    <span>
-                      acres
-                    </span>
-
-                  </div>
-
-
-                  <label>
-                    Location
-                  </label>
-
-                  <input
-                    type="text"
-                    placeholder="Village / City"
-                    value={farmLocation}
-                    onChange={(event) =>
-                      setFarmLocation(
-                        event.target.value
-                      )
-                    }
-                    required
-                  />
-
-
-                  <div className="farm-modal-actions">
-
-                    <button
-                      type="button"
-                      className="cancel-button"
-                      onClick={() =>
-                        setShowAddFarm(false)
-                      }
-                    >
-                      Cancel
-                    </button>
-
-
-                    <button
-                      type="submit"
-                      className="primary-button"
-                    >
-                      Add Farm →
-                    </button>
-
-                  </div>
-
-                </form>
-
-              </div>
-
-            </div>
-
-          )}
-
-        </main>
-
-      </div>
-    );
-  }
-
-
-  /* --------------------------------------------------
-     FARM DETAILS PAGE
-  -------------------------------------------------- */
-
-  if (page.startsWith("farm-")) {
-
-    const farmId =
-      Number(
-        page.replace("farm-", "")
-      );
-
-
-    const selectedFarm =
-      farms.find(
-        (farm) =>
-          farm.id === farmId
-      );
-
-
-    if (!selectedFarm) {
-
-      return (
-
-        <div className="dashboard">
-
-          <Sidebar />
-
-          <main className="dashboard-main">
-
-            <div className="dashboard-card">
-
-              <h2>
-                Farm not found
-              </h2>
+              <p>
+                Add a crop to one of your farms
+                before using Crop Intelligence.
+              </p>
 
               <button
-                className="primary-button"
+                className="secondary-button"
                 onClick={() =>
                   navigateTo("farms")
                 }
               >
-                ← Back to My Farms
+                Go to My Farms →
               </button>
 
             </div>
 
-          </main>
+          ) : (
 
-        </div>
-      );
-    }
+            <>
 
+              <div className="form-group">
 
-    /* ----------------------------------------------
-       CALCULATE USED + AVAILABLE AREA
-    ---------------------------------------------- */
+                <label>
+                  Select Field
+                </label>
 
-    const usedArea =
-      selectedFarm.fields.reduce(
-        (total, field) =>
-          total + Number(field.area),
-        0
-      );
+                <select
+                  value={
+                    selectedIntelligenceFieldId
+                  }
+                  onChange={(event) =>
+                    setSelectedIntelligenceFieldId(
+                      event.target.value
+                    )
+                  }
+                >
 
+                  <option value="">
+                    Choose a field
+                  </option>
 
-    const availableArea =
-      selectedFarm.area - usedArea;
+                  {intelligenceFields.map(
+                    (field) => (
 
+                      <option
+                        key={field.id}
+                        value={field.id}
+                      >
+                        {field.farm?.farmName ||
+                          "Farm"}{" "}
+                        •{" "}
+                        {field.crop?.cropName ||
+                          "Field"}{" "}
+                        •{" "}
+                        {field.area} acres
+                      </option>
 
-    /* ----------------------------------------------
-       OPENED CROP MODAL BELONGS TO THIS FARM
-    ---------------------------------------------- */
+                    )
+                  )}
 
-    const isCropModalForThisFarm =
-      showAddCrop &&
-      selectedFarmId === selectedFarm.id;
-
-
-    return (
-
-      <div className="dashboard">
-
-        <Sidebar />
-
-
-        <main className="dashboard-main">
-
-
-          {/* BACK BUTTON */}
-
-          <button
-            className="farm-back-button"
-            onClick={() =>
-              setPage("farms")
-            }
-          >
-            ← Back to My Farms
-          </button>
-
-
-          {/* FARM HEADER */}
-
-          <header className="dashboard-header farm-details-header">
-
-            <div>
-
-              <p className="dashboard-label">
-                FARM DETAILS
-              </p>
-
-              <h1>
-                {selectedFarm.name}{" "}
-                {selectedFarm.icon}
-              </h1>
-
-              <p className="dashboard-subtitle">
-                📍 {selectedFarm.location}
-              </p>
-
-            </div>
-
-
-            <span className="farm-status">
-              ACTIVE
-            </span>
-
-          </header>
-
-
-          {/* FARM SUMMARY */}
-
-          <section className="farm-detail-summary">
-
-
-            <div className="farm-detail-card">
-
-              <span className="farm-detail-icon">
-                📐
-              </span>
-
-              <div>
-
-                <small>
-                  Farm Area
-                </small>
-
-                <strong>
-                  {selectedFarm.area} acres
-                </strong>
+                </select>
 
               </div>
 
-            </div>
+
+              {selectedIntelligenceFieldId && (
+
+                <div className="farm-area-summary">
+
+                  {(() => {
+
+                    const field =
+                      intelligenceFields.find(
+                        (item) =>
+                          String(item.id) ===
+                          String(
+                            selectedIntelligenceFieldId
+                          )
+                      );
+
+                    return (
+
+                      <>
+
+                        <div>
+
+                          <span>
+                            Current Crop
+                          </span>
+
+                          <strong>
+                            {field?.crop?.cropName ||
+                              "—"}
+                          </strong>
+
+                        </div>
 
 
-            <div className="farm-detail-card">
+                        <div>
 
-              <span className="farm-detail-icon">
-                🌱
-              </span>
+                          <span>
+                            Soil Type
+                          </span>
 
-              <div>
+                          <strong>
+                            {field?.soilType ||
+                              "—"}
+                          </strong>
 
-                <small>
-                  Crops
-                </small>
-
-                <strong>
-                  {selectedFarm.fields.length}
-                </strong>
-
-              </div>
-
-            </div>
+                        </div>
 
 
-            <div className="farm-detail-card">
+                        <div>
 
-              <span className="farm-detail-icon">
-                📍
-              </span>
+                          <span>
+                            Field Area
+                          </span>
 
-              <div>
+                          <strong>
+                            {field?.area || 0} acres
+                          </strong>
 
-                <small>
-                  Location
-                </small>
+                        </div>
 
-                <strong>
-                  {selectedFarm.location}
-                </strong>
+                      </>
 
-              </div>
+                    );
 
-            </div>
+                  })()}
 
-          </section>
+                </div>
+
+              )}
 
 
-          {/* CROPS SECTION */}
+              <button
+                className="primary-button"
+                onClick={
+                  handleCropRecommendation
+                }
+                disabled={
+                  recommendationLoading
+                }
+              >
 
-          <section className="dashboard-card farm-fields-card">
+                {recommendationLoading
+                  ? "Analyzing..."
+                  : "Get Crop Recommendation →"}
 
+              </button>
+
+
+              {recommendationError && (
+
+                <p className="form-error">
+                  {recommendationError}
+                </p>
+
+              )}
+
+            </>
+
+          )}
+
+        </section>
+
+
+        {/* RECOMMENDATION RESULT */}
+
+        {cropRecommendation && (
+
+          <section className="dashboard-card">
 
             <div className="card-heading">
 
               <div>
 
                 <span className="heading-icon">
-                  🌱
+                  🌾
                 </span>
 
                 <div>
 
                   <h2>
-                    Crops on this Farm
+                    ML Recommendation
                   </h2>
 
                   <p>
-                    Add the crops you are growing
-                    and the area used for each crop.
+                    Generated from soil conditions
+                    and live weather data.
                   </p>
 
                 </div>
 
               </div>
 
-
-              <button
-                type="button"
-                className="secondary-button farm-action-button"
-                onClick={() =>
-                  openAddCrop(
-                    selectedFarm.id
-                  )
-                }
-              >
-                + Add Crop
-              </button>
-
             </div>
 
 
-            {/* AREA SUMMARY */}
+            <div className="recommendation-preview">
 
-            <div className="farm-area-summary">
-
+              <div className="crop-visual">
+                🌱
+              </div>
 
               <div>
 
-                <span>
-                  Farm Area
+                <span className="recommended-label">
+                  RECOMMENDED CROP
                 </span>
 
-                <strong>
-                  {selectedFarm.area} acres
-                </strong>
-
-              </div>
-
-
-              <div>
-
-                <span>
-                  Used Area
-                </span>
-
-                <strong>
-                  {usedArea} acres
-                </strong>
-
-              </div>
-
-
-              <div>
-
-                <span>
-                  Available
-                </span>
-
-                <strong>
-                  {availableArea} acres
-                </strong>
-
-              </div>
-
-            </div>
-
-
-            {/* CROP LIST */}
-
-            {selectedFarm.fields.length > 0 ? (
-
-              <div className="fields-list">
-
-                {selectedFarm.fields.map(
-                  (field) => {
-
-                    const cropInfo =
-                      cropOptions.find(
-                        (item) =>
-                          item.name ===
-                          field.crop
-                      );
-
-
-                    return (
-
-                      <div
-                        className="field-card"
-                        key={field.id}
-                      >
-
-
-                        <div className="field-card-header">
-
-                          <div>
-
-                            <h3>
-
-                              {cropInfo?.icon ||
-                                "🌱"}{" "}
-
-                              {field.crop}
-
-                            </h3>
-
-                            <span>
-                              {field.area} acres
-                            </span>
-
-                          </div>
-
-
-                          <span className="field-crop">
-                            {field.cropSeason}
-                          </span>
-
-                        </div>
-
-
-                        <div className="field-details">
-
-
-                          <div>
-
-                            <small>
-                              Soil Type
-                            </small>
-
-                            <strong>
-                              {field.soilType}
-                            </strong>
-
-                          </div>
-
-
-                          <div>
-
-                            <small>
-                              Growth Duration
-                            </small>
-
-                            <strong>
-                              {field.growthDuration} days
-                            </strong>
-
-                          </div>
-
-
-                          <div>
-
-                            <small>
-                              Land Allocation
-                            </small>
-
-                            <strong>
-                              {field.area} acres
-                            </strong>
-
-                          </div>
-
-                        </div>
-
-                      </div>
-                    );
-                  }
-                )}
-
-              </div>
-
-            ) : (
-
-              /* ------------------------------------
-                 NO CROPS
-              ------------------------------------ */
-
-              <div className="farm-empty-state">
-
-                <span>
-                  🌱
-                </span>
-
-                <h3>
-                  No crops added yet
-                </h3>
+                <h2>
+                  {cropRecommendation.recommendedCrop}
+                </h2>
 
                 <p>
-                  Add your first crop to start
-                  tracking this farm in AgriFlow.
+                  Predicted probability:{" "}
+                  <strong>
+                    {cropRecommendation.probability}%
+                  </strong>
                 </p>
 
+              </div>
 
-                <button
-                  type="button"
-                  className="secondary-button farm-action-button"
-                  onClick={() =>
-                    openAddCrop(
-                      selectedFarm.id
-                    )
-                  }
-                >
-                  + Add First Crop
-                </button>
+            </div>
+
+
+            {/* CONDITIONS */}
+
+            {cropRecommendation.conditionsUsed && (
+
+              <div className="farm-area-summary">
+
+                <div>
+
+                  <span>
+                    Temperature
+                  </span>
+
+                  <strong>
+                    {
+                      cropRecommendation
+                        .conditionsUsed
+                        .temperature
+                    }°C
+                  </strong>
+
+                </div>
+
+
+                <div>
+
+                  <span>
+                    Humidity
+                  </span>
+
+                  <strong>
+                    {
+                      cropRecommendation
+                        .conditionsUsed
+                        .humidity
+                    }%
+                  </strong>
+
+                </div>
+
+
+                <div>
+
+                  <span>
+                    Rainfall
+                  </span>
+
+                  <strong>
+                    {
+                      cropRecommendation
+                        .conditionsUsed
+                        .rainfall
+                    } mm
+                  </strong>
+
+                </div>
 
               </div>
 
             )}
 
 
-          </section>
+            {/* TOP RECOMMENDATIONS */}
 
+            {cropRecommendation.topRecommendations &&
+              cropRecommendation.topRecommendations.length > 0 && (
 
-          {/* ------------------------------------------
-              ADD CROP MODAL
-          ------------------------------------------ */}
+                <div className="dashboard-card">
 
-          {isCropModalForThisFarm && (
+                  <h3>
+                    Other suitable crops
+                  </h3>
 
-            <div
-              className="modal-overlay"
-              onClick={closeAddCrop}
-            >
+                  <div className="fields-list">
 
-              <div
-                className="modal-card"
-                onClick={(event) =>
-                  event.stopPropagation()
-                }
-              >
+                    {cropRecommendation.topRecommendations.map(
+                      (item, index) => (
 
+                        <div
+                          className="field-card"
+                          key={index}
+                        >
 
-                {/* MODAL HEADER */}
+                          <div className="field-card-header">
 
-                <div className="modal-header">
+                            <div>
 
-                  <div>
+                              <h3>
+                                🌱 {item.crop}
+                              </h3>
 
-                    <p className="dashboard-label">
-                      ADD CROP
-                    </p>
+                            </div>
 
-                    <h2>
-                      What are you growing?
-                    </h2>
+                            <span className="field-crop">
+                              {item.probability}%
+                            </span>
 
-                    <p>
-                      Add a crop to{" "}
-                      {selectedFarm.name}.
-                    </p>
+                          </div>
 
-                  </div>
+                        </div>
 
-
-                  <button
-                    type="button"
-                    className="modal-close"
-                    onClick={closeAddCrop}
-                  >
-                    ×
-                  </button>
-
-                </div>
-
-
-                {/* FORM */}
-
-                <form
-                  onSubmit={handleAddCrop}
-                >
-
-
-                  {/* CROP */}
-
-                  <div className="form-group">
-
-                    <label>
-                      Select Crop
-                    </label>
-
-                    <select
-                      value={selectedCrop}
-                      onChange={(event) =>
-                        setSelectedCrop(
-                          event.target.value
-                        )
-                      }
-                      required
-                    >
-
-                      <option value="">
-                        Choose a crop
-                      </option>
-
-
-                      {cropOptions.map(
-                        (item) => (
-
-                          <option
-                            key={item.name}
-                            value={item.name}
-                          >
-                            {item.icon}{" "}
-                            {item.name}
-                          </option>
-
-                        )
-                      )}
-
-                    </select>
-
-                  </div>
-
-
-                  {/* LAND AREA */}
-
-                  <div className="form-group">
-
-                    <label>
-                      Land Used
-                    </label>
-
-
-                    <div className="farm-input-with-unit">
-
-                      <input
-                        type="number"
-                        min="0.1"
-                        max={
-                          availableArea > 0
-                            ? availableArea
-                            : undefined
-                        }
-                        step="0.1"
-                        placeholder="How much land?"
-                        value={cropArea}
-                        onChange={(event) =>
-                          setCropArea(
-                            event.target.value
-                          )
-                        }
-                        required
-                      />
-
-                      <span>
-                        acres
-                      </span>
-
-                    </div>
-
-
-                    <small className="form-helper">
-
-                      Available land:{" "}
-
-                      {availableArea} acres
-
-                    </small>
-
-                  </div>
-
-
-                  {/* SOIL */}
-
-                  <div className="form-group">
-
-                    <label>
-                      Soil Type
-                    </label>
-
-
-                    <select
-                      value={cropSoil}
-                      onChange={(event) =>
-                        setCropSoil(
-                          event.target.value
-                        )
-                      }
-                      required
-                    >
-
-                      <option value="">
-                        Select soil type
-                      </option>
-
-
-                      {soilOptions.map(
-                        (soil) => (
-
-                          <option
-                            key={soil}
-                            value={soil}
-                          >
-                            {soil}
-                          </option>
-
-                        )
-                      )}
-
-                    </select>
-
-                  </div>
-
-
-                  {/* SEASON */}
-
-                  <div className="form-group">
-
-                    <label>
-                      Growing Season
-                    </label>
-
-
-                    <select
-                      value={cropSeason}
-                      onChange={(event) =>
-                        setCropSeason(
-                          event.target.value
-                        )
-                      }
-                      required
-                    >
-
-                      <option value="">
-                        Select season
-                      </option>
-
-
-                      {seasonOptions.map(
-                        (season) => (
-
-                          <option
-                            key={season}
-                            value={season}
-                          >
-                            {season}
-                          </option>
-
-                        )
-                      )}
-
-                    </select>
-
-                  </div>
-
-
-                  {/* GROWTH DURATION */}
-
-                  {selectedCrop && (
-
-                    <div className="crop-duration-preview">
-
-                      <span>
-                        🌱
-                      </span>
-
-                      <div>
-
-                        <small>
-                          Expected growth duration
-                        </small>
-
-                        <strong>
-
-                          {
-                            cropOptions.find(
-                              (item) =>
-                                item.name ===
-                                selectedCrop
-                            )?.growthDuration
-                          }{" "}
-
-                          days
-
-                        </strong>
-
-                      </div>
-
-                    </div>
-
-                  )}
-
-
-                  {/* ACTION BUTTONS */}
-
-                  <div className="form-actions">
-
-                    <button
-                      type="button"
-                      className="secondary-button"
-                      onClick={closeAddCrop}
-                    >
-                      Cancel
-                    </button>
-
-
-                    <button
-                      type="submit"
-                      className="primary-button"
-                    >
-                      Add Crop
-                    </button>
-
-                  </div>
-
-                </form>
-
-              </div>
-
-            </div>
-
-          )}
-
-
-          {/* ------------------------------------------
-              CROP INTELLIGENCE + WEATHER
-          ------------------------------------------ */}
-
-          <section className="farm-info-section">
-
-
-            <div className="dashboard-card">
-
-              <div className="card-heading">
-
-                <div>
-
-                  <span className="heading-icon">
-                    🤖
-                  </span>
-
-                  <div>
-
-                    <h2>
-                      Crop Intelligence
-                    </h2>
-
-                    <p>
-                      AI-powered insights for this farm.
-                    </p>
+                      )
+                    )}
 
                   </div>
 
                 </div>
 
-              </div>
+              )}
 
 
-              <div className="farm-info-placeholder">
+            {/* WHY THESE FACTORS */}
 
-                <span>
-                  🌾
-                </span>
+            {cropRecommendation.whyTheseFactorsMatter &&
+              cropRecommendation.whyTheseFactorsMatter.length > 0 && (
 
-                <p>
-                  Add crop information to receive
-                  agricultural recommendations based
-                  on your farm conditions and weather.
-                </p>
+                <div className="dashboard-card">
 
-              </div>
+                  <h3>
+                    Factors used by the model
+                  </h3>
 
-            </div>
+                  <div className="fields-list">
 
+                    {cropRecommendation
+                      .whyTheseFactorsMatter
+                      .map(
+                        (factor, index) => (
 
-            <div className="dashboard-card">
+                          <div
+                            className="field-card"
+                            key={index}
+                          >
 
-              <div className="card-heading">
+                            <div className="field-card-header">
 
-                <div>
+                              <div>
 
-                  <span className="heading-icon">
-                    ☁️
-                  </span>
+                                <h3>
+                                  {factor.factor}
+                                </h3>
 
-                  <div>
+                              </div>
 
-                    <h2>
-                      Farm Weather
-                    </h2>
+                              <span className="field-crop">
+                                {factor.importance}%
+                              </span>
 
-                    <p>
-                      Weather conditions for this farm.
-                    </p>
+                            </div>
+
+                          </div>
+
+                        )
+                      )}
 
                   </div>
 
                 </div>
 
-              </div>
+              )}
 
 
-              {weatherLoading ? (
-  <div className="farm-weather-placeholder">
-    <strong>...</strong>
-    <span>☁️ Loading weather...</span>
-  </div>
-) : weatherError ? (
-  <div className="farm-weather-placeholder">
-    <strong>⚠️</strong>
-    <span>{weatherError}</span>
-  </div>
-) : farmWeather ? (
-  <div className="farm-weather-live">
-    <div className="weather-main-value">
-      <strong>
-        {farmWeather.weather.current.temperature_2m}°C
-      </strong>
-      <span>🌤️ Current temperature</span>
-    </div>
+            <p className="form-helper">
 
-    <div className="weather-mini-grid">
-      <div>
-        <small>Humidity</small>
-        <strong>
-          {farmWeather.weather.current.relative_humidity_2m}%
-        </strong>
-      </div>
+              The percentage shown is the model's
+              predicted class probability, not a
+              guarantee of crop success.
 
-      <div>
-        <small>Rainfall</small>
-        <strong>
-          {farmWeather.weather.current.precipitation} mm
-        </strong>
-      </div>
-
-      <div>
-        <small>Wind</small>
-        <strong>
-          {farmWeather.weather.current.wind_speed_10m} km/h
-        </strong>
-      </div>
-
-      <div>
-        <small>Rain probability</small>
-        <strong>
-          {farmWeather.maximumRainProbability}%
-        </strong>
-      </div>
-    </div>
-  </div>
-) : null}
-
-            </div>
+            </p>
 
           </section>
 
+        )}
 
-        </main>
+      </main>
 
-      </div>
-    );
-  }
+    </div>
 
+  );
+}
+/* --------------------------------------------------
+   MY FARMS PAGE
+-------------------------------------------------- */
 
-  /* --------------------------------------------------
-     DASHBOARD
-  -------------------------------------------------- */
+if (page === "farms") {
 
   const totalFields =
     farms.reduce(
       (total, farm) =>
         total + farm.fields.length,
+      0
+    );
+
+
+  const totalArea =
+    farms.reduce(
+      (total, farm) =>
+        total + farm.area,
       0
     );
 
@@ -2417,58 +2393,54 @@ function App() {
       <main className="dashboard-main">
 
 
-        {/* DASHBOARD HEADER */}
-
         <header className="dashboard-header">
 
           <div>
 
             <p className="dashboard-label">
-              FARMER DASHBOARD
+              FARM MANAGEMENT
             </p>
 
             <h1>
-              Good morning,{" "}
-              {farmerName || "Farmer"} 👋
+              My Farms 🌾
             </h1>
 
             <p className="dashboard-subtitle">
-              Manage your farm and make smarter
-              agricultural decisions.
+              Manage your farms and keep track
+              of your agricultural land.
             </p>
 
           </div>
 
 
-          <div className="profile-circle">
-
-            {farmerName
-              ? farmerName
-                  .charAt(0)
-                  .toUpperCase()
-              : "F"}
-
-          </div>
+          <button
+            className="primary-button"
+            onClick={() =>
+              setShowAddFarm(true)
+            }
+          >
+            + Add Farm
+          </button>
 
         </header>
 
 
-        {/* STAT CARDS */}
+        {/* FARM SUMMARY */}
 
-        <section className="stat-grid">
+        <section className="farm-summary-grid">
 
 
-          <div className="stat-card">
+          <div className="farm-summary-card">
 
-            <div className="stat-icon green">
+            <span>
               🌾
-            </div>
+            </span>
 
             <div>
 
-              <span>
-                My Farms
-              </span>
+              <small>
+                Total Farms
+              </small>
 
               <strong>
                 {farms.length}
@@ -2479,17 +2451,38 @@ function App() {
           </div>
 
 
-          <div className="stat-card">
+          <div className="farm-summary-card">
 
-            <div className="stat-icon brown">
-              🌱
-            </div>
+            <span>
+              📐
+            </span>
 
             <div>
 
-              <span>
-                My Crops
-              </span>
+              <small>
+                Total Area
+              </small>
+
+              <strong>
+                {totalArea} acres
+              </strong>
+
+            </div>
+
+          </div>
+
+
+          <div className="farm-summary-card">
+
+            <span>
+              🌱
+            </span>
+
+            <div>
+
+              <small>
+                Total Crops
+              </small>
 
               <strong>
                 {totalFields}
@@ -2499,21 +2492,407 @@ function App() {
 
           </div>
 
+        </section>
 
-          <div className="stat-card">
 
-            <div className="stat-icon blue">
-              ☁️
+        {/* FARM SECTION */}
+
+        <div className="farm-section-heading">
+
+          <div>
+
+            <h2>
+              Your Farms
+            </h2>
+
+            <p>
+              Select a farm to manage its crops
+              and agricultural information.
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <section className="farm-grid">
+
+          {farms.map(
+            (farm) => (
+
+              <div
+                className="farm-card"
+                key={farm.id}
+              >
+
+                <div className="farm-card-top">
+
+                  <span className="farm-icon">
+                    {farm.icon}
+                  </span>
+
+                  <span className="farm-status">
+                    ACTIVE
+                  </span>
+
+                </div>
+
+
+                <h2>
+                  {farm.name}
+                </h2>
+
+
+                <p className="farm-location">
+                  📍 {farm.location}
+                </p>
+
+
+                <div className="farm-details">
+
+                  <div>
+
+                    <span>
+                      Farm Area
+                    </span>
+
+                    <strong>
+                      {farm.area} acres
+                    </strong>
+
+                  </div>
+
+
+                  <div>
+
+                    <span>
+                      Crops
+                    </span>
+
+                    <strong>
+                      {farm.fields.length}
+                    </strong>
+
+                  </div>
+
+                </div>
+
+
+                <button
+                  className="farm-view-button"
+                  onClick={() =>
+                    navigateTo(
+                      `farm-${farm.id}`
+                    )
+                  }
+                >
+                  View Farm →
+                </button>
+
+              </div>
+
+            )
+          )}
+
+        </section>
+
+
+        {/* ADD FARM MODAL */}
+
+        {showAddFarm && (
+
+          <div className="farm-modal-overlay">
+
+            <div className="farm-modal">
+
+
+              <div className="farm-modal-header">
+
+                <div>
+
+                  <span>
+                    🌾
+                  </span>
+
+                  <div>
+
+                    <h2>
+                      Add New Farm
+                    </h2>
+
+                    <p>
+                      Enter the basic details
+                      of your farm.
+                    </p>
+
+                  </div>
+
+                </div>
+
+
+                <button
+                  type="button"
+                  className="modal-close"
+                  onClick={() =>
+                    setShowAddFarm(false)
+                  }
+                >
+                  ×
+                </button>
+
+              </div>
+
+
+              <form
+                onSubmit={handleAddFarm}
+              >
+
+                <label>
+                  Farm Name
+                </label>
+
+                <input
+                  type="text"
+                  placeholder="Example: Green Farm"
+                  value={farmName}
+                  onChange={(event) =>
+                    setFarmName(
+                      event.target.value
+                    )
+                  }
+                  required
+                />
+
+
+                <label>
+                  Farm Area
+                </label>
+
+                <div className="farm-input-with-unit">
+
+                  <input
+                    type="number"
+                    min="0.1"
+                    step="0.1"
+                    placeholder="Enter farm area"
+                    value={farmArea}
+                    onChange={(event) =>
+                      setFarmArea(
+                        event.target.value
+                      )
+                    }
+                    required
+                  />
+
+                  <span>
+                    acres
+                  </span>
+
+                </div>
+
+
+                <label>
+                  Location
+                </label>
+
+                <input
+                  type="text"
+                  placeholder="Village / City"
+                  value={farmLocation}
+                  onChange={(event) =>
+                    setFarmLocation(
+                      event.target.value
+                    )
+                  }
+                  required
+                />
+
+
+                <div className="farm-modal-actions">
+
+                  <button
+                    type="button"
+                    className="cancel-button"
+                    onClick={() =>
+                      setShowAddFarm(false)
+                    }
+                  >
+                    Cancel
+                  </button>
+
+
+                  <button
+                    type="submit"
+                    className="primary-button"
+                  >
+                    Add Farm →
+                  </button>
+
+                </div>
+
+              </form>
+
             </div>
+
+          </div>
+
+        )}
+
+      </main>
+
+    </div>
+  );
+}
+
+
+/* --------------------------------------------------
+   FARM DETAILS PAGE
+-------------------------------------------------- */
+
+if (page.startsWith("farm-")) {
+
+  const farmId =
+    Number(
+      page.replace("farm-", "")
+    );
+
+
+  const selectedFarm =
+    farms.find(
+      (farm) =>
+        farm.id === farmId
+    );
+
+
+  if (!selectedFarm) {
+
+    return (
+
+      <div className="dashboard">
+
+        <Sidebar />
+
+        <main className="dashboard-main">
+
+          <div className="dashboard-card">
+
+            <h2>
+              Farm not found
+            </h2>
+
+            <button
+              className="primary-button"
+              onClick={() =>
+                navigateTo("farms")
+              }
+            >
+              ← Back to My Farms
+            </button>
+
+          </div>
+
+        </main>
+
+      </div>
+    );
+  }
+
+
+  /* ----------------------------------------------
+     CALCULATE USED + AVAILABLE AREA
+  ---------------------------------------------- */
+
+  const usedArea =
+    selectedFarm.fields.reduce(
+      (total, field) =>
+        total + Number(field.area),
+      0
+    );
+
+
+  const availableArea =
+    selectedFarm.area - usedArea;
+
+
+  /* ----------------------------------------------
+     OPENED CROP MODAL BELONGS TO THIS FARM
+  ---------------------------------------------- */
+
+  const isCropModalForThisFarm =
+    showAddCrop &&
+    selectedFarmId === selectedFarm.id;
+
+
+  return (
+
+    <div className="dashboard">
+
+      <Sidebar />
+
+
+      <main className="dashboard-main">
+
+
+        {/* BACK BUTTON */}
+
+        <button
+          className="farm-back-button"
+          onClick={() =>
+            setPage("farms")
+          }
+        >
+          ← Back to My Farms
+        </button>
+
+
+        {/* FARM HEADER */}
+
+        <header className="dashboard-header farm-details-header">
+
+          <div>
+
+            <p className="dashboard-label">
+              FARM DETAILS
+            </p>
+
+            <h1>
+              {selectedFarm.name}{" "}
+              {selectedFarm.icon}
+            </h1>
+
+            <p className="dashboard-subtitle">
+              📍 {selectedFarm.location}
+            </p>
+
+          </div>
+
+
+          <span className="farm-status">
+            ACTIVE
+          </span>
+
+        </header>
+
+
+        {/* FARM SUMMARY */}
+
+        <section className="farm-detail-summary">
+
+
+          <div className="farm-detail-card">
+
+            <span className="farm-detail-icon">
+              📐
+            </span>
 
             <div>
 
-              <span>
-                Temperature
-              </span>
+              <small>
+                Farm Area
+              </small>
 
               <strong>
-                32°C
+                {selectedFarm.area} acres
               </strong>
 
             </div>
@@ -2521,20 +2900,41 @@ function App() {
           </div>
 
 
-          <div className="stat-card">
+          <div className="farm-detail-card">
 
-            <div className="stat-icon yellow">
-              🌧️
-            </div>
+            <span className="farm-detail-icon">
+              🌱
+            </span>
 
             <div>
 
-              <span>
-                Rain Probability
-              </span>
+              <small>
+                Crops
+              </small>
 
               <strong>
-                40%
+                {selectedFarm.fields.length}
+              </strong>
+
+            </div>
+
+          </div>
+
+
+          <div className="farm-detail-card">
+
+            <span className="farm-detail-icon">
+              📍
+            </span>
+
+            <div>
+
+              <small>
+                Location
+              </small>
+
+              <strong>
+                {selectedFarm.location}
               </strong>
 
             </div>
@@ -2544,14 +2944,549 @@ function App() {
         </section>
 
 
-        {/* DASHBOARD MAIN CARDS */}
+        {/* CROPS SECTION */}
 
-        <section className="dashboard-grid">
+        <section className="dashboard-card farm-fields-card">
 
 
-          {/* CROP INTELLIGENCE */}
+          <div className="card-heading">
 
-          <div className="dashboard-card intelligence-card">
+            <div>
+
+              <span className="heading-icon">
+                🌱
+              </span>
+
+              <div>
+
+                <h2>
+                  Crops on this Farm
+                </h2>
+
+                <p>
+                  Add the crops you are growing
+                  and the area used for each crop.
+                </p>
+
+              </div>
+
+            </div>
+
+
+            <button
+              type="button"
+              className="secondary-button farm-action-button"
+              onClick={() =>
+                openAddCrop(
+                  selectedFarm.id
+                )
+              }
+            >
+              + Add Crop
+            </button>
+
+          </div>
+
+
+          {/* AREA SUMMARY */}
+
+          <div className="farm-area-summary">
+
+
+            <div>
+
+              <span>
+                Farm Area
+              </span>
+
+              <strong>
+                {selectedFarm.area} acres
+              </strong>
+
+            </div>
+
+
+            <div>
+
+              <span>
+                Used Area
+              </span>
+
+              <strong>
+                {usedArea} acres
+              </strong>
+
+            </div>
+
+
+            <div>
+
+              <span>
+                Available
+              </span>
+
+              <strong>
+                {availableArea} acres
+              </strong>
+
+            </div>
+
+          </div>
+
+
+          {/* CROP LIST */}
+
+          {selectedFarm.fields.length > 0 ? (
+
+            <div className="fields-list">
+
+              {selectedFarm.fields.map(
+                (field) => {
+
+                  const cropInfo =
+                    cropOptions.find(
+                      (item) =>
+                        item.name ===
+                        field.crop
+                    );
+
+
+                  return (
+
+                    <div
+                      className="field-card"
+                      key={field.id}
+                    >
+
+
+                      <div className="field-card-header">
+
+                        <div>
+
+                          <h3>
+
+                            {cropInfo?.icon ||
+                              "🌱"}{" "}
+
+                            {field.crop}
+
+                          </h3>
+
+                          <span>
+                            {field.area} acres
+                          </span>
+
+                        </div>
+
+
+                        <span className="field-crop">
+                          {field.cropSeason}
+                        </span>
+
+                      </div>
+
+
+                      <div className="field-details">
+
+
+                        <div>
+
+                          <small>
+                            Soil Type
+                          </small>
+
+                          <strong>
+                            {field.soilType}
+                          </strong>
+
+                        </div>
+
+
+                        <div>
+
+                          <small>
+                            Growth Duration
+                          </small>
+
+                          <strong>
+                            {field.growthDuration} days
+                          </strong>
+
+                        </div>
+
+
+                        <div>
+
+                          <small>
+                            Land Allocation
+                          </small>
+
+                          <strong>
+                            {field.area} acres
+                          </strong>
+
+                        </div>
+
+                      </div>
+
+                    </div>
+                  );
+                }
+              )}
+
+            </div>
+
+          ) : (
+
+            /* ------------------------------------
+               NO CROPS
+            ------------------------------------ */
+
+            <div className="farm-empty-state">
+
+              <span>
+                🌱
+              </span>
+
+              <h3>
+                No crops added yet
+              </h3>
+
+              <p>
+                Add your first crop to start
+                tracking this farm in AgriFlow.
+              </p>
+
+
+              <button
+                type="button"
+                className="secondary-button farm-action-button"
+                onClick={() =>
+                  openAddCrop(
+                    selectedFarm.id
+                  )
+                }
+              >
+                + Add First Crop
+              </button>
+
+            </div>
+
+          )}
+
+
+        </section>
+
+
+        {/* ------------------------------------------
+              ADD CROP MODAL
+          ------------------------------------------ */}
+
+        {isCropModalForThisFarm && (
+
+          <div
+            className="modal-overlay"
+            onClick={closeAddCrop}
+          >
+
+            <div
+              className="modal-card"
+              onClick={(event) =>
+                event.stopPropagation()
+              }
+            >
+
+
+              {/* MODAL HEADER */}
+
+              <div className="modal-header">
+
+                <div>
+
+                  <p className="dashboard-label">
+                    ADD CROP
+                  </p>
+
+                  <h2>
+                    What are you growing?
+                  </h2>
+
+                  <p>
+                    Add a crop to{" "}
+                    {selectedFarm.name}.
+                  </p>
+
+                </div>
+
+
+                <button
+                  type="button"
+                  className="modal-close"
+                  onClick={closeAddCrop}
+                >
+                  ×
+                </button>
+
+              </div>
+
+
+              {/* FORM */}
+
+              <form
+                onSubmit={handleAddCrop}
+              >
+
+
+                {/* CROP */}
+
+                <div className="form-group">
+
+                  <label>
+                    Select Crop
+                  </label>
+
+                  <select
+                    value={selectedCrop}
+                    onChange={(event) =>
+                      setSelectedCrop(
+                        event.target.value
+                      )
+                    }
+                    required
+                  >
+
+                    <option value="">
+                      Choose a crop
+                    </option>
+
+
+                    {cropOptions.map(
+                      (item) => (
+
+                        <option
+                          key={item.name}
+                          value={item.name}
+                        >
+                          {item.icon}{" "}
+                          {item.name}
+                        </option>
+
+                      )
+                    )}
+
+                  </select>
+
+                </div>
+
+
+                {/* LAND AREA */}
+
+                <div className="form-group">
+
+                  <label>
+                    Land Used
+                  </label>
+
+
+                  <div className="farm-input-with-unit">
+
+                    <input
+                      type="number"
+                      min="0.1"
+                      max={
+                        availableArea > 0
+                          ? availableArea
+                          : undefined
+                      }
+                      step="0.1"
+                      placeholder="How much land?"
+                      value={cropArea}
+                      onChange={(event) =>
+                        setCropArea(
+                          event.target.value
+                        )
+                      }
+                      required
+                    />
+
+                    <span>
+                      acres
+                    </span>
+
+                  </div>
+
+
+                  <small className="form-helper">
+
+                    Available land:{" "}
+
+                    {availableArea} acres
+
+                  </small>
+
+                </div>
+
+
+                {/* SOIL */}
+
+                <div className="form-group">
+
+                  <label>
+                    Soil Type
+                  </label>
+
+
+                  <select
+                    value={cropSoil}
+                    onChange={(event) =>
+                      setCropSoil(
+                        event.target.value
+                      )
+                    }
+                    required
+                  >
+
+                    <option value="">
+                      Select soil type
+                    </option>
+
+
+                    {soilOptions.map(
+                      (soil) => (
+
+                        <option
+                          key={soil}
+                          value={soil}
+                        >
+                          {soil}
+                        </option>
+
+                      )
+                    )}
+
+                  </select>
+
+                </div>
+
+
+                {/* SEASON */}
+
+                <div className="form-group">
+
+                  <label>
+                    Growing Season
+                  </label>
+
+
+                  <select
+                    value={cropSeason}
+                    onChange={(event) =>
+                      setCropSeason(
+                        event.target.value
+                      )
+                    }
+                    required
+                  >
+
+                    <option value="">
+                      Select season
+                    </option>
+
+
+                    {seasonOptions.map(
+                      (season) => (
+
+                        <option
+                          key={season}
+                          value={season}
+                        >
+                          {season}
+                        </option>
+
+                      )
+                    )}
+
+                  </select>
+
+                </div>
+
+
+                {/* GROWTH DURATION */}
+
+                {selectedCrop && (
+
+                  <div className="crop-duration-preview">
+
+                    <span>
+                      🌱
+                    </span>
+
+                    <div>
+
+                      <small>
+                        Expected growth duration
+                      </small>
+
+                      <strong>
+
+                        {
+                          cropOptions.find(
+                            (item) =>
+                              item.name ===
+                              selectedCrop
+                          )?.growthDuration
+                        }{" "}
+
+                        days
+
+                      </strong>
+
+                    </div>
+
+                  </div>
+
+                )}
+
+
+                {/* ACTION BUTTONS */}
+
+                <div className="form-actions">
+
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    onClick={closeAddCrop}
+                  >
+                    Cancel
+                  </button>
+
+
+                  <button
+                    type="submit"
+                    className="primary-button"
+                  >
+                    Add Crop
+                  </button>
+
+                </div>
+
+              </form>
+
+            </div>
+
+          </div>
+
+        )}
+
+
+        {/* ------------------------------------------
+              CROP INTELLIGENCE + WEATHER
+          ------------------------------------------ */}
+
+        <section className="farm-info-section">
+
+
+          <div className="dashboard-card">
 
             <div className="card-heading">
 
@@ -2568,57 +3503,34 @@ function App() {
                   </h2>
 
                   <p>
-                    AI-powered crop recommendation
+                    AI-powered insights for this farm.
                   </p>
 
                 </div>
 
               </div>
 
-
-              <span className="ai-badge">
-                AI POWERED
-              </span>
-
             </div>
 
 
-            <div className="recommendation-preview">
+            <div className="farm-info-placeholder">
 
-              <div className="crop-visual">
+              <span>
                 🌾
-              </div>
+              </span>
 
-              <div>
-
-                <span className="recommended-label">
-                  CROP RECOMMENDATION
-                </span>
-
-                <h3>
-                  Discover the right crop
-                </h3>
-
-                <p>
-                  Use your field conditions and
-                  live weather data to discover
-                  suitable crops.
-                </p>
-
-                <button className="secondary-button">
-                  Explore Crop Intelligence →
-                </button>
-
-              </div>
+              <p>
+                Add crop information to receive
+                agricultural recommendations based
+                on your farm conditions and weather.
+              </p>
 
             </div>
 
           </div>
 
 
-          {/* WEATHER */}
-
-          <div className="dashboard-card weather-card">
+          <div className="dashboard-card">
 
             <div className="card-heading">
 
@@ -2631,11 +3543,11 @@ function App() {
                 <div>
 
                   <h2>
-                    Weather
+                    Farm Weather
                   </h2>
 
                   <p>
-                    Current conditions
+                    Weather conditions for this farm.
                   </p>
 
                 </div>
@@ -2645,318 +3557,56 @@ function App() {
             </div>
 
 
-            <div className="weather-main">
-
-              <span>
-                ☀️
-              </span>
-
-              <div>
-
-                <strong>
-                  32°C
-                </strong>
-
-                <p>
-                  Current temperature
-                </p>
-
+            {weatherLoading ? (
+              <div className="farm-weather-placeholder">
+                <strong>...</strong>
+                <span>☁️ Loading weather...</span>
               </div>
-
-            </div>
-
-
-            <div className="weather-details">
-
-              <div>
-
-                <span>
-                  💧 Humidity
-                </span>
-
-                <strong>
-                  56%
-                </strong>
-
+            ) : weatherError ? (
+              <div className="farm-weather-placeholder">
+                <strong>⚠️</strong>
+                <span>{weatherError}</span>
               </div>
-
-
-              <div>
-
-                <span>
-                  🌧️ Rainfall
-                </span>
-
-                <strong>
-                  0 mm
-                </strong>
-
-              </div>
-
-            </div>
-
-          </div>
-
-        </section>
-
-
-        {/* CHARTS */}
-
-        <section className="charts-section">
-
-
-          {/* WEATHER CHART */}
-
-          <div className="dashboard-card chart-card">
-
-            <div className="card-heading">
-
-              <div>
-
-                <span className="heading-icon">
-                  🌤️
-                </span>
-
-                <div>
-
-                  <h2>
-                    Weather Trend
-                  </h2>
-
-                  <p>
-                    Temperature over the last 7 days
-                  </p>
-
+            ) : farmWeather ? (
+              <div className="farm-weather-live">
+                <div className="weather-main-value">
+                  <strong>
+                    {farmWeather.weather.current.temperature_2m}°C
+                  </strong>
+                  <span>🌤️ Current temperature</span>
                 </div>
 
-              </div>
+                <div className="weather-mini-grid">
+                  <div>
+                    <small>Humidity</small>
+                    <strong>
+                      {farmWeather.weather.current.relative_humidity_2m}%
+                    </strong>
+                  </div>
 
+                  <div>
+                    <small>Rainfall</small>
+                    <strong>
+                      {farmWeather.weather.current.precipitation} mm
+                    </strong>
+                  </div>
 
-              <span className="chart-label">
-                7 DAYS
-              </span>
+                  <div>
+                    <small>Wind</small>
+                    <strong>
+                      {farmWeather.weather.current.wind_speed_10m} km/h
+                    </strong>
+                  </div>
 
-            </div>
-
-
-            <div className="chart-container">
-
-              <ResponsiveContainer
-                width="100%"
-                height={280}
-              >
-
-                <LineChart
-                  data={weatherData}
-                >
-
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                  />
-
-                  <XAxis
-                    dataKey="day"
-                  />
-
-                  <YAxis />
-
-                  <Tooltip />
-
-                  <Line
-                    type="monotone"
-                    dataKey="temperature"
-                    strokeWidth={3}
-                    dot={{ r: 5 }}
-                    name="Temperature"
-                  />
-
-                </LineChart>
-
-              </ResponsiveContainer>
-
-            </div>
-
-          </div>
-
-
-          {/* CROP CHART */}
-
-          <div className="dashboard-card chart-card">
-
-            <div className="card-heading">
-
-              <div>
-
-                <span className="heading-icon">
-                  🌾
-                </span>
-
-                <div>
-
-                  <h2>
-                    Crop Distribution
-                  </h2>
-
-                  <p>
-                    Fields by crop type
-                  </p>
-
+                  <div>
+                    <small>Rain probability</small>
+                    <strong>
+                      {farmWeather.maximumRainProbability}%
+                    </strong>
+                  </div>
                 </div>
-
               </div>
-
-            </div>
-
-
-            <div className="chart-container">
-
-              <ResponsiveContainer
-                width="100%"
-                height={280}
-              >
-
-                <BarChart
-                  data={cropData}
-                >
-
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                  />
-
-                  <XAxis
-                    dataKey="crop"
-                  />
-
-                  <YAxis
-                    allowDecimals={false}
-                  />
-
-                  <Tooltip />
-
-                  <Bar
-                    dataKey="fields"
-                    name="Fields"
-                    radius={[
-                      6,
-                      6,
-                      0,
-                      0
-                    ]}
-                  />
-
-                </BarChart>
-
-              </ResponsiveContainer>
-
-            </div>
-
-          </div>
-
-        </section>
-
-
-        {/* IMPORTANCE SECTION */}
-
-        <section className="importance-section">
-
-
-          <div className="section-title">
-
-            <span>
-              🌍
-            </span>
-
-            <div>
-
-              <h2>
-                Why smarter farming matters
-              </h2>
-
-              <p>
-                Technology can help turn
-                agricultural data into useful
-                decisions.
-              </p>
-
-            </div>
-
-          </div>
-
-
-          <div className="importance-grid">
-
-
-            <div>
-
-              <span>
-                🌾
-              </span>
-
-              <h3>
-                Food Security
-              </h3>
-
-              <p>
-                Farming provides the food
-                communities depend on every day.
-              </p>
-
-            </div>
-
-
-            <div>
-
-              <span>
-                💧
-              </span>
-
-              <h3>
-                Better Decisions
-              </h3>
-
-              <p>
-                Data can help farmers understand
-                changing field and weather conditions.
-              </p>
-
-            </div>
-
-
-            <div>
-
-              <span>
-                🌍
-              </span>
-
-              <h3>
-                Sustainable Future
-              </h3>
-
-              <p>
-                Smarter agricultural practices
-                can support responsible resource use.
-              </p>
-
-            </div>
-
-
-            <div>
-
-              <span>
-                🤖
-              </span>
-
-              <h3>
-                Technology
-              </h3>
-
-              <p>
-                Weather intelligence and machine
-                learning can support modern
-                farming decisions.
-              </p>
-
-            </div>
+            ) : null}
 
           </div>
 
@@ -2969,5 +3619,588 @@ function App() {
   );
 }
 
+
+/* --------------------------------------------------
+   DASHBOARD
+-------------------------------------------------- */
+
+const totalFields =
+  farms.reduce(
+    (total, farm) =>
+      total + farm.fields.length,
+    0
+  );
+
+
+return (
+
+  <div className="dashboard">
+
+    <Sidebar />
+
+
+    <main className="dashboard-main">
+
+
+      {/* DASHBOARD HEADER */}
+
+      <header className="dashboard-header">
+
+        <div>
+
+          <p className="dashboard-label">
+            FARMER DASHBOARD
+          </p>
+
+          <h1>
+            Good morning,{" "}
+            {farmerName || "Farmer"} 👋
+          </h1>
+
+          <p className="dashboard-subtitle">
+            Manage your farm and make smarter
+            agricultural decisions.
+          </p>
+
+        </div>
+
+
+        <div className="profile-circle">
+
+          {farmerName
+            ? farmerName
+              .charAt(0)
+              .toUpperCase()
+            : "F"}
+
+        </div>
+
+      </header>
+
+
+      {/* STAT CARDS */}
+
+      <section className="stat-grid">
+
+
+        <div className="stat-card">
+
+          <div className="stat-icon green">
+            🌾
+          </div>
+
+          <div>
+
+            <span>
+              My Farms
+            </span>
+
+            <strong>
+              {farms.length}
+            </strong>
+
+          </div>
+
+        </div>
+
+
+        <div className="stat-card">
+
+          <div className="stat-icon brown">
+            🌱
+          </div>
+
+          <div>
+
+            <span>
+              My Crops
+            </span>
+
+            <strong>
+              {totalFields}
+            </strong>
+
+          </div>
+
+        </div>
+
+
+        <div className="stat-card">
+
+          <div className="stat-icon blue">
+            ☁️
+          </div>
+
+          <div>
+
+            <span>
+              Temperature
+            </span>
+
+            <strong>
+              {dashboardWeather
+                ? `${dashboardWeather.weather.current.temperature_2m}°C`
+                : "--"}
+            </strong>
+
+          </div>
+
+        </div>
+
+
+        <div className="stat-card">
+
+          <div className="stat-icon yellow">
+            🌧️
+          </div>
+
+          <div>
+
+            <span>
+              Rain Probability
+            </span>
+
+            <strong>
+              {dashboardWeather
+                ? `${dashboardWeather.maximumRainProbability}%`
+                : "--"}
+            </strong>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      {/* DASHBOARD MAIN CARDS */}
+
+      <section className="dashboard-grid">
+
+
+        {/* CROP INTELLIGENCE */}
+
+        <div className="dashboard-card intelligence-card">
+
+          <div className="card-heading">
+
+            <div>
+
+              <span className="heading-icon">
+                🤖
+              </span>
+
+              <div>
+
+                <h2>
+                  Crop Intelligence
+                </h2>
+
+                <p>
+                  AI-powered crop recommendation
+                </p>
+
+              </div>
+
+            </div>
+
+
+            <span className="ai-badge">
+              AI POWERED
+            </span>
+
+          </div>
+
+
+          <div className="recommendation-preview">
+
+            <div className="crop-visual">
+              🌾
+            </div>
+
+            <div>
+
+              <span className="recommended-label">
+                CROP RECOMMENDATION
+              </span>
+
+              <h3>
+                Discover the right crop
+              </h3>
+
+              <p>
+                Use your field conditions and
+                live weather data to discover
+                suitable crops.
+              </p>
+
+              <button className="secondary-button">
+                Explore Crop Intelligence →
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        {/* WEATHER */}
+
+        <div className="dashboard-card weather-card">
+
+          <div className="card-heading">
+
+            <div>
+
+              <span className="heading-icon">
+                ☁️
+              </span>
+
+              <div>
+
+                <h2>
+                  Weather
+                </h2>
+
+                <p>
+                  Current conditions
+                </p>
+
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <div className="weather-main">
+
+            <span>
+              ☀️
+            </span>
+
+            <div>
+
+              <strong>
+                {dashboardWeather
+                  ? `${dashboardWeather.weather.current.temperature_2m}°C`
+                  : "--"}
+              </strong>
+
+              <p>
+                Current temperature
+              </p>
+
+            </div>
+
+          </div>
+
+
+          <div className="weather-details">
+
+            <div>
+
+              <span>
+                💧 Humidity
+              </span>
+
+              <strong>
+                {dashboardWeather
+                  ? `${dashboardWeather.weather.current.relative_humidity_2m}%`
+                  : "--"}
+              </strong>
+            </div>
+
+
+            <div>
+
+              <span>
+                🌧️ Rainfall
+              </span>
+
+              <strong>
+                {dashboardWeather
+                  ? `${dashboardWeather.weather.current.precipitation} mm`
+                  : "--"}
+              </strong>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      {/* CHARTS */}
+
+      <section className="charts-section">
+
+
+        {/* WEATHER CHART */}
+
+        <div className="dashboard-card chart-card">
+
+          <div className="card-heading">
+
+            <div>
+
+              <span className="heading-icon">
+                🌤️
+              </span>
+
+              <div>
+
+                <h2>
+                  Weather Trend
+                </h2>
+
+                <p>
+                  Forecast temperature
+                </p>
+
+              </div>
+
+            </div>
+
+
+            <span className="chart-label">
+              FORECAST
+            </span>
+
+          </div>
+
+
+          <div className="chart-container">
+
+            <ResponsiveContainer
+              width="100%"
+              height={280}
+            >
+
+              <LineChart
+                data={dashboardWeatherChartData}
+              >
+
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                />
+
+                <XAxis
+                  dataKey="day"
+                />
+
+                <YAxis />
+
+                <Tooltip />
+
+                <Line
+                  type="monotone"
+                  dataKey="temperature"
+                  strokeWidth={3}
+                  dot={{ r: 5 }}
+                  name="Temperature"
+                />
+
+              </LineChart>
+
+            </ResponsiveContainer>
+
+          </div>
+
+        </div>
+
+
+        {/* CROP CHART */}
+
+        <div className="dashboard-card chart-card">
+
+          <div className="card-heading">
+
+            <div>
+
+              <span className="heading-icon">
+                🌾
+              </span>
+
+              <div>
+
+                <h2>
+                  Crop Distribution
+                </h2>
+
+                <p>
+                  Fields by crop type
+                </p>
+
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <div className="chart-container">
+
+            <ResponsiveContainer
+              width="100%"
+              height={280}
+            >
+
+              <BarChart
+                data={dashboardCropData}
+              >
+
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                />
+
+                <XAxis
+                  dataKey="crop"
+                />
+
+                <YAxis
+                  allowDecimals={false}
+                />
+
+                <Tooltip />
+
+                <Bar
+                  dataKey="fields"
+                  name="Fields"
+                  radius={[
+                    6,
+                    6,
+                    0,
+                    0
+                  ]}
+                />
+
+              </BarChart>
+
+            </ResponsiveContainer>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      {/* IMPORTANCE SECTION */}
+
+      <section className="importance-section">
+
+
+        <div className="section-title">
+
+          <span>
+            🌍
+          </span>
+
+          <div>
+
+            <h2>
+              Why smarter farming matters
+            </h2>
+
+            <p>
+              Technology can help turn
+              agricultural data into useful
+              decisions.
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <div className="importance-grid">
+
+
+          <div>
+
+            <span>
+              🌾
+            </span>
+
+            <h3>
+              Food Security
+            </h3>
+
+            <p>
+              Farming provides the food
+              communities depend on every day.
+            </p>
+
+          </div>
+
+
+          <div>
+
+            <span>
+              💧
+            </span>
+
+            <h3>
+              Better Decisions
+            </h3>
+
+            <p>
+              Data can help farmers understand
+              changing field and weather conditions.
+            </p>
+
+          </div>
+
+
+          <div>
+
+            <span>
+              🌍
+            </span>
+
+            <h3>
+              Sustainable Future
+            </h3>
+
+            <p>
+              Smarter agricultural practices
+              can support responsible resource use.
+            </p>
+
+          </div>
+
+
+          <div>
+
+            <span>
+              🤖
+            </span>
+
+            <h3>
+              Technology
+            </h3>
+
+            <p>
+              Weather intelligence and machine
+              learning can support modern
+              farming decisions.
+            </p>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+    </main>
+
+  </div>
+);
+                  }
 export default App;
 

@@ -18,6 +18,9 @@ public class FieldService {
         this.fieldRepository = fieldRepository;
     }
 
+    public List<Field> getFieldsByFarmerId(Long farmerId) {
+        return fieldRepository.findByFarmerId(farmerId);
+    }
     public Field saveField(Field field) {
 
         Farm farm = field.getFarm();

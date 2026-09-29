@@ -1,5 +1,5 @@
 package com.agriflow.agriflow.controller;
-
+import org.springframework.web.bind.annotation.CrossOrigin;
 import java.util.List;
 
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -14,7 +14,7 @@ import com.agriflow.agriflow.model.Field;
 import com.agriflow.agriflow.service.FieldService;
 
 import jakarta.validation.Valid;
-
+@CrossOrigin(origins = "http://localhost:5173")
 @RestController
 public class FieldController {
 
@@ -27,6 +27,12 @@ public class FieldController {
     @PostMapping("/fields")
     public Field saveField(@Valid @RequestBody Field field) {
         return fieldService.saveField(field);
+    }
+    
+    
+    @GetMapping("/fields/farmer/{farmerId}")
+    public List<Field> getFieldsByFarmerId(@PathVariable Long farmerId) {
+        return fieldService.getFieldsByFarmerId(farmerId);
     }
 
     @GetMapping("/fields")

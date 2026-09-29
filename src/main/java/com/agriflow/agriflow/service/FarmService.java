@@ -23,6 +23,11 @@ public class FarmService {
     public List<Farm> getAllFarms() {
         return farmRepository.findAll();
     }
+    
+    public List<Farm> getFarmsByFarmerId(Long farmerId) {
+        return farmRepository.findByFarmerId(farmerId);
+    }
+    
 
     public Farm getFarmById(Long id) {
         return farmRepository.findById(id).orElse(null);
